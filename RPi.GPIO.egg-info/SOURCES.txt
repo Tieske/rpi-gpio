@@ -6,11 +6,14 @@ README.txt
 distribute_setup.py
 setup.py
 .hg/last-message.txt
-RPi/__init__.py
 RPi.GPIO.egg-info/PKG-INFO
 RPi.GPIO.egg-info/SOURCES.txt
 RPi.GPIO.egg-info/dependency_links.txt
 RPi.GPIO.egg-info/top_level.txt
 source/c_gpio.c
 source/c_gpio.h
+source/cpuinfo.c
+source/cpuinfo.h
+source/delme.c
 source/py_gpio.c
+test/test.py

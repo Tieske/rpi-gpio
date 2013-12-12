@@ -20,30 +20,46 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-int setup(void);
-void setup_gpio(int gpio, int direction, int pud);
-int gpio_function(int gpio);
-void output_gpio(int gpio, int value);
-int input_gpio(int gpio);
-void set_rising_event(int gpio, int enable);
-void set_falling_event(int gpio, int enable);
-void set_high_event(int gpio, int enable);
-void set_low_event(int gpio, int enable);
-int event_detected(int gpio);
-void cleanup(void);
+#include <stdio.h>
+#include <string.h>
+#include "cpuinfo.h"
 
-#define SETUP_OK          0
-#define SETUP_DEVMEM_FAIL 1
-#define SETUP_MALLOC_FAIL 2
-#define SETUP_MMAP_FAIL   3
+char *get_cpuinfo_revision(char *revision)
+{
+   FILE *fp;
+   char buffer[1024];
+   char hardware[1024];
+   int  rpi_found = 0;
 
-#define INPUT  1 // is really 0 for control register!
-#define OUTPUT 0 // is really 1 for control register!
-#define ALT0   4
+   if ((fp = fopen("/proc/cpuinfo", "r")) == NULL)
+      return 0;
 
-#define HIGH 1
-#define LOW  0
+   while(!feof(fp)) {
+      fgets(buffer, sizeof(buffer) , fp);
+      sscanf(buffer, "Hardware	: %s", hardware);
+      if (strcmp(hardware, "BCM2708") == 0)
+         rpi_found = 1;
+      sscanf(buffer, "Revision	: %s", revision);
+   }
+   fclose(fp);
 
-#define PUD_OFF  0
-#define PUD_DOWN 1
-#define PUD_UP   2
+   if (!rpi_found)
+      revision = NULL;
+   return revision;
+}
+
+int get_rpi_revision(void)
+{
+   char revision[1024] = {'\0'};
+   
+   if (get_cpuinfo_revision(revision) == NULL)
+      return -1;
+      
+   if ((strcmp(revision, "0002") == 0) ||
+       (strcmp(revision, "1000002") == 0 ) ||
+       (strcmp(revision, "0003") == 0) ||
+       (strcmp(revision, "1000003") == 0 ))
+      return 1;
+   else // assume rev 2 (0004 0005 0006 1000004 1000005 1000006)
+      return 2;
+}

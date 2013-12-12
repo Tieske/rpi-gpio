@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: RPi.GPIO
-Version: 0.3.1a
+Version: 0.4.0a
 Summary: A class to control Raspberry Pi GPIO channels
 Home-page: http://code.google.com/p/raspberry-gpio-python/
 Author: Ben Croston
@@ -39,10 +39,49 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
             # input from RPi board pin 11
             input_value = GPIO.input(11)
         
+            # set up rising edge detection (EXPERIMENTAL)
+            set_rising_event(11)
+        
+            # check for an event (EXPERIMENTAL)
+            if GPIO.event_detected(11):
+                print('Rising edge detected!')
+        
+            # set up falling edge detection (EXPERIMENTAL)
+            GPIO.set_rising_event(11, enable=False)  # disable rising edge detection (as set above)
+            GPIO.set_falling_event(11)
+        
+            # set up high detection (EXPERIMENTAL)
+            GPIO.set_falling_event(11, enable=False)  # disable falling edge detection (as set above)
+            GPIO.set_high_event(11)
+        
+            # set up low detection (EXPERIMENTAL)
+            GPIO.set_high_event(11, enable=False)  # disable high detection (as set above)
+            GPIO.set_low_event(11)
+        
             # to change to BCM GPIO numbering
             GPIO.setmode(GPIO.BCM)
+        
+            # to reset every channel that has been set up by this program to INPUT with no pullup/pulldown and no event detection.
+            GPIO.cleanup()
+        
         Change Log
         ==========
+        
+        0.4.0a
+        ------
+        - Added support for Revision 2 boards
+        - Added RPI_REVISION
+        - Added cleanup() function and removed automatic reset functionality on program exit
+        - Added get_function() to read existing GPIO channel functionality (suggestion from Eric Ptak <trouch@trouch.com>)
+        - Added set_rising_event()
+        - Added set_falling_event()
+        - Added set_high_event()
+        - Added set_low_event()
+        - Added event_detected()
+        - Added test/test.py
+        - Converted debian to armhf
+        - Fixed C function short_wait() (thanks to Thibault Porteboeuf <thibaultporteboeuf@gmail.com>)
+        
         0.3.1a
         ------
         - Fixed critical bug with swapped high/low state on outputs
@@ -91,6 +130,7 @@ Classifier: Development Status :: 3 - Alpha
 Classifier: Operating System :: POSIX :: Linux
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 2.6
 Classifier: Programming Language :: Python :: 2.7
 Classifier: Programming Language :: Python :: 3
 Classifier: Topic :: Software Development

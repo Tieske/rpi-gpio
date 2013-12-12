@@ -26,14 +26,19 @@ SOFTWARE.
 #include <sys/mman.h>
 #include "c_gpio.h"
 
-#define BCM2708_PERI_BASE  0x20000000
-#define GPIO_BASE          (BCM2708_PERI_BASE + 0x200000)
-#define FSEL_OFFSET        0   // 0x0000
-#define SET_OFFSET         7   // 0x001c / 4
-#define CLR_OFFSET         10  // 0x0028 / 4
-#define PINLEVEL_OFFSET    13  // 0x0034 / 4
-#define PULLUPDN_OFFSET    37  // 0x0094 / 4
-#define PULLUPDNCLK_OFFSET 38  // 0x0098 / 4
+#define BCM2708_PERI_BASE   0x20000000
+#define GPIO_BASE           (BCM2708_PERI_BASE + 0x200000)
+#define FSEL_OFFSET         0   // 0x0000
+#define SET_OFFSET          7   // 0x001c / 4
+#define CLR_OFFSET          10  // 0x0028 / 4
+#define PINLEVEL_OFFSET     13  // 0x0034 / 4
+#define EVENT_DETECT_OFFSET 16  // 0x0040 / 4
+#define RISING_ED_OFFSET    19  // 0x004c / 4
+#define FALLING_ED_OFFSET   22  // 0x0058 / 4
+#define HIGH_DETECT_OFFSET  25  // 0x0064 / 4
+#define LOW_DETECT_OFFSET   28  // 0x0070 / 4
+#define PULLUPDN_OFFSET     37  // 0x0094 / 4
+#define PULLUPDNCLK_OFFSET  38  // 0x0098 / 4
 
 #define PAGE_SIZE  (4*1024)
 #define BLOCK_SIZE (4*1024)
@@ -44,10 +49,9 @@ void short_wait(void)
 {
     int i;
     
-    for (i=0; i<100; i++)
+    for (i=0; i<150; i++)     // wait 150 cycles
     {
-        i++;
-        i--;
+		asm volatile("nop");
     }
 }
 
@@ -73,6 +77,83 @@ int setup(void)
         return SETUP_MMAP_FAIL;
 
     return SETUP_OK;
+}
+
+void clear_event_detect(int gpio)
+{
+	int offset = EVENT_DETECT_OFFSET + (gpio/32);
+    int shift = (gpio%32);
+
+    *(gpio_map+offset) |= (1 << shift);
+    short_wait();
+    *(gpio_map+offset) = 0;
+}
+
+int event_detected(int gpio)
+{
+	int offset, value, bit;
+   
+    offset = EVENT_DETECT_OFFSET + (gpio/32);
+    bit = (1 << (gpio%32));
+    value = *(gpio_map+offset) & bit;
+    if (value)
+    {
+        clear_event_detect(gpio);
+	}
+    return value;
+}
+
+void set_rising_event(int gpio, int enable)
+{
+	int offset = RISING_ED_OFFSET + (gpio/32);
+    int shift = (gpio%32);
+
+	if (enable)
+	    *(gpio_map+offset) |= 1 << shift;
+	else
+	    *(gpio_map+offset) &= ~(1 << shift);
+    clear_event_detect(gpio);
+}
+
+void set_falling_event(int gpio, int enable)
+{
+	int offset = FALLING_ED_OFFSET + (gpio/32);
+    int shift = (gpio%32);
+
+	if (enable)
+	{
+	    *(gpio_map+offset) |= (1 << shift);
+	    *(gpio_map+offset) = (1 << shift);
+	} else {
+	    *(gpio_map+offset) &= ~(1 << shift);
+	}
+    clear_event_detect(gpio);
+}
+
+void set_high_event(int gpio, int enable)
+{
+	int offset = HIGH_DETECT_OFFSET + (gpio/32);
+    int shift = (gpio%32);
+
+	if (enable)
+	{
+	    *(gpio_map+offset) |= (1 << shift);
+	} else {
+	    *(gpio_map+offset) &= ~(1 << shift);
+	}
+    clear_event_detect(gpio);
+}
+
+void set_low_event(int gpio, int enable)
+{
+	int offset = LOW_DETECT_OFFSET + (gpio/32);
+    int shift = (gpio%32);
+
+	if (enable)
+	    *(gpio_map+offset) |= 1 << shift;
+	else
+	    *(gpio_map+offset) &= ~(1 << shift);
+    clear_event_detect(gpio);
 }
 
 void set_pullupdn(int gpio, int pud)
@@ -104,6 +185,17 @@ void setup_gpio(int gpio, int direction, int pud)
         *(gpio_map+offset) = (*(gpio_map+offset) & ~(7<<shift)) | (1<<shift);
     else  // direction == INPUT
         *(gpio_map+offset) = (*(gpio_map+offset) & ~(7<<shift));
+}
+
+// Contribution by Eric Ptak <trouch@trouch.com>
+int gpio_function(int gpio)
+{
+   int offset = FSEL_OFFSET + (gpio/10);
+   int shift = (gpio%10)*3;
+   int value = *(gpio_map+offset);
+   value >>= shift;
+   value &= 7;
+   return value; // 0=input, 1=output, 4=alt0
 }
 
 void output_gpio(int gpio, int value)
