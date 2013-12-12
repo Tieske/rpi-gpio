@@ -6,8 +6,12 @@ def test_output():
     for i in range(10):
             time.sleep(0.1)
             GPIO.output(16, GPIO.HIGH)
+            if GPIO.input(16) != GPIO.HIGH:
+                    print('Read back of output failed.')
             time.sleep(0.1)
             GPIO.output(16, GPIO.LOW)
+            if GPIO.input(16) != GPIO.LOW:
+                    print('Read back of output failed.')
 
 def test_input():
     print('INPUT test (Ctrl-C to stop)')
@@ -85,6 +89,7 @@ while 1:
         print('G - gpio_function')
         print('B - Board revision')
         print('W - Test warnings')
+        print('V - Version')
         print('X - eXit')
         command = input('Enter your choice: ').upper()
 
@@ -108,6 +113,8 @@ while 1:
                 test_warnings()
         elif command.startswith('B'):
                 test_board_revision()
+        elif command.startswith('V'):
+                print('RPi.GPIO Version',GPIO.VERSION)
         elif command.startswith('X'):
                 break
 

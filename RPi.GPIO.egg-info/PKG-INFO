@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: RPi.GPIO
-Version: 0.4.0a
+Version: 0.4.1a
 Summary: A class to control Raspberry Pi GPIO channels
 Home-page: http://code.google.com/p/raspberry-gpio-python/
 Author: Ben Croston
@@ -66,6 +66,11 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         
         Change Log
         ==========
+        
+        0.4.1a
+        ------
+        - Added VERSION
+        - Permit input() of channels set as outputs (Eric Ptak <trouch@trouch.com>)
         
         0.4.0a
         ------

@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+0.4.1a
+------
+- Added VERSION
+- Permit input() of channels set as outputs (Eric Ptak <trouch@trouch.com>)
+
 0.4.0a
 ------
 - Added support for Revision 2 boards

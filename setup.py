@@ -1,6 +1,6 @@
 import distribute_setup
 distribute_setup.use_setuptools()
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 
 classifiers = ['Development Status :: 3 - Alpha',
                'Operating System :: POSIX :: Linux',
@@ -14,7 +14,7 @@ classifiers = ['Development Status :: 3 - Alpha',
                'Topic :: System :: Hardware']
 
 setup(name             = 'RPi.GPIO',
-      version          = '0.4.0a',
+      version          = '0.4.1a',
       author           = 'Ben Croston',
       author_email     = 'ben@croston.org',
       description      = 'A class to control Raspberry Pi GPIO channels',
@@ -23,4 +23,5 @@ setup(name             = 'RPi.GPIO',
       keywords         = 'Raspberry Pi GPIO',
       url              = 'http://code.google.com/p/raspberry-gpio-python/',
       classifiers      = classifiers,
+      packages         = find_packages(),
       ext_modules      = [Extension('RPi.GPIO', ['source/py_gpio.c', 'source/c_gpio.c', 'source/cpuinfo.c'])])

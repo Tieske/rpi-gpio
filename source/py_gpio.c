@@ -42,6 +42,7 @@ static PyObject *pud_off;
 static PyObject *pud_up;
 static PyObject *pud_down;
 static PyObject *rpi_revision;
+static PyObject *version;
 
 static int gpio_direction[54];
 static const int pin_to_gpio_rev1[27] = {-1, -1, -1, 0, -1, 1, -1, 4, 14, -1, 15, 17, 18, 21, -1, 22, 23, -1, 24, 10, -1, 9, 25, 11, 8, -1, 7};
@@ -137,9 +138,9 @@ static int verify_input(int channel, int *gpio)
         *gpio = channel;
     }
 
-    if (gpio_direction[*gpio] != INPUT)
+    if ((gpio_direction[*gpio] != INPUT) && (gpio_direction[*gpio] != OUTPUT))
     {
-        PyErr_SetString(WrongDirectionException, "The GPIO channel has not been set up as an INPUT");
+        PyErr_SetString(WrongDirectionException, "GPIO channel has not been set up");
         return 0;
     }
     return 1;
@@ -434,7 +435,7 @@ PyMethodDef rpi_gpio_methods[] = {
    {"set_low_event", (PyCFunction)py_set_low_event, METH_VARARGS | METH_KEYWORDS, "EXPERIMENTAL.  Set low detection\nchannel   - Either: RPi board pin number (not BCM GPIO 00..nn number).  Pins start from 1\n            or    : BCM GPIO number\n[enable] - True (default) or False"},
    {"event_detected", py_event_detected, METH_VARARGS, "EXPERIMENTAL.  Returns True if an event has occured"},
    {"gpio_function", py_gpio_function, METH_VARARGS, "Return the current GPIO function (IN, OUT, ALT0)"},
-   {"setwarnings", py_setwarnings, METH_VARARGS, "Enable of disable warning messages"},
+   {"setwarnings", py_setwarnings, METH_VARARGS, "Enable or disable warning messages"},
    {NULL, NULL, 0, NULL}
 };
 
@@ -534,6 +535,9 @@ PyMODINIT_FUNC initGPIO(void)
    }
    rpi_revision = Py_BuildValue("i", revision);
    PyModule_AddObject(module, "RPI_REVISION", rpi_revision);
+   
+   version = Py_BuildValue("s", "0.4.1a");
+   PyModule_AddObject(module, "VERSION", version);
    
    // set up mmaped areas
    if (module_setup() != SETUP_OK )
