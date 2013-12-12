@@ -1,4 +1,4 @@
-This package provides a class to control the GPIO lines on a Raspberry Pi.
+This package provides a class to control the GPIO on a Raspberry Pi.
 
 Example Usage :
 

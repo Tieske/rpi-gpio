@@ -21,6 +21,14 @@
 # SOFTWARE.
 
 import os
+import atexit
+
+IN = 'in'
+OUT = 'out'
+_validids = (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15)
+_ExportedIds = {}
+_filehandle = {}
+atexit.register(_unexport)
 
 class InvalidIdException(Exception):
     """The Id sent is invalid on a Raspberry Pi"""
@@ -34,17 +42,10 @@ class WrongDirectionException(Exception):
     """The GPIO channel has not been set up or is set up in the wrong direction"""
     pass
 
-IN = 'in'
-OUT = 'out'
-_validids = (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15)
-
 class GPIO(object):
     """
     A class to control the GPIO on a Raspberry Pi
     """
-    def __init(self):
-        self._ExportedIds = {}
-
     def _CheckValidId(self, id):
         if (type(id) == str and not isdigit(id)) and type(id) != int:
             raise InvalidIdException
@@ -71,32 +72,31 @@ class GPIO(object):
         with f as open('/sys/class/gpio/gpio%s/direction'%id):
             f.write(direction)
 
-        self._ExportedIds[id] = direction
+        _ExportedIds[id] = direction
+        _filehandle[id] = open('/sys/class/gpio/gpio%s/value'%id, 'w' if direction == OUT else 'r')
 
     def output(self, id, value):
         """Write to a GPIO channel"""
         self._CheckValidId(id)
-        if id not in self._ExportedIds or self._ExportedIds[id] != OUT:
+        if id not in _ExportedIds or _ExportedIds[id] != OUT:
             raise WrongDirectionException
-        value = '1' if value else '0'
-        with f as open('/sys/class/gpio/gpio%s/value'%id, 'w'):
-            f.write(value)
+        _filehandle[id].write('1' if value else '0')
 
     def input(self, id):
         """Read from a GPIO channel"""
         self._CheckValidId(id)
-        if id not in self._ExportedIds or self._ExportedIds[id] != IN:
+        if id not in _ExportedIds or _ExportedIds[id] != IN:
             raise WrongDirectionException
-        with f as open('/sys/class/gpio/gpio%s/value'%id, 'r'):
-            value = f.read()
-        return value == '1'
+        return _filehandle[id].read() == '1'
 
-   def __del__(self):
-       """Clean up by unexporting eveything that we have set up"""
-        for id in self._ExportedIds:
+def _unexport():
+    """Clean up by unexporting eveything that we have set up"""
+    for f in _filehandle:
+        close(f)
+    for id in _ExportedIds:
+        if os.path.exists('/sys/class/gpio/gpio%s'%id):
             with f as open('/sys/class/gpio/unexport', 'w'):
-                if os.path.exists('/sys/class/gpio/gpio%s'%id):
-                    f.write(str(id))
+                f.write(str(id))
 
 if __name__ == '__main__':
     # assumes channel 0 INPUT

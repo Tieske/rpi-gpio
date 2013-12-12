@@ -1,12 +1,12 @@
 Metadata-Version: 1.0
 Name: RPi.GPIO
-Version: 0.0.1a
-Summary: A class to control Raspberry Pi GPIO lines
-Home-page: http://www.wyre-it.co.uk/rpi/gpio
+Version: 0.0.2a
+Summary: A class to control Raspberry Pi GPIO channels
+Home-page: http://code.google.com/p/raspberry-gpio-python/
 Author: Ben Croston
 Author-email: ben@croston.org
 License: MIT
-Description: This package provides a class to control the GPIO lines on a Raspberry Pi.
+Description: This package provides a class to control the GPIO on a Raspberry Pi.
         
         Example Usage :
         
@@ -27,6 +27,10 @@ Description: This package provides a class to control the GPIO lines on a Raspbe
         
         Change Log
         ==========
+        
+        0.0.2a
+        ------
+        - Internal refactoring.  Still completely untested!
         
         0.0.1a
         ------
