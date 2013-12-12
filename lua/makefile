@@ -1,5 +1,5 @@
 
-RPI_GPIO_PYTHON_SRC_DIR=../RPi.GPIO-0.5.3a/source/
+RPI_GPIO_PYTHON_SRC_DIR=../source/
 
 LUA_LIBS=$(shell pkg-config --libs lua5.1)
 
