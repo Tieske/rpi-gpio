@@ -1,1 +1,1 @@
-Added tag 0.4.2a for changeset fdf1aeb8fecf
+Added tag 0.5.0a for changeset b8da656fb650

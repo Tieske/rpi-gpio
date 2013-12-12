@@ -1,6 +1,24 @@
 Change Log
 ==========
 
+0.5.0a
+------
+- Added new edge detection events (interrupt handling)
+  - Added add_event_detect()
+  - Added remove_event_detect()
+  - Added add_event_callback()
+  - Added wait_for_edge()
+- Removed old experimental event functions
+  - Removed set_rising_event()
+  - Removed set_falling_event()
+  - Removed set_high_event()
+  - Removed set_low_event()
+- Changed event_detected() for new edge detection functionality
+- input() now returns 0/LOW == False or 1/HIGH == True (integers) instead of False or True (booleans).
+- Fix error on repeated import (issue 3)
+- Change SetupException to a RuntimeError so it can be caught on import (issue 25, Chris Hager <chris@linuxuser.at>)
+- Improved docstrings of functions
+
 0.4.2a
 ------
 - Fix for installing on Arch Linux (Python 3.3) (issue 20)
@@ -66,4 +84,3 @@ Change Log
 0.0.1a
 ------
 - First version.  Completely untested until I can get hold of a Raspberry Pi!
-

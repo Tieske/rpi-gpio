@@ -23,28 +23,52 @@ def test_input():
         return
 
 def test_rising():
-    print('Rising edge test (test not implemented)')
-
+    def cb():
+        xprint('Callback 1 - this should produce an exception')
+    def cb2():
+        print('Callback 2 called')
+        
+    print('Rising edge test')
+    print('5 second sample for event_detected function')
+    
+    try:
+        GPIO.add_event_detect(16, GPIO.RISING)
+        print('Fail - added event to an output, not produced AddEventException')
+    except GPIO.WrongDirectionException:
+        pass
+    GPIO.add_event_detect(18, GPIO.RISING)
+    time.sleep(5)
+    if GPIO.event_detected(18):
+        print('Event detected')
+    else:
+        print('Event not detected')
+    print('5 seconds for callback function (which should produce exceptions)')
+    input('Press return to start: ')
+    GPIO.add_event_callback(18, cb)
+    GPIO.add_event_callback(18, cb2)
+    time.sleep(5)
+    GPIO.remove_event_detect(18);
+    print('Blocking wait for rising edge...')
+    GPIO.wait_for_edge(18, GPIO.RISING)
+    
 def test_falling():
+    def cb():
+        print('Callback called!')
+        
     print('Falling edge test')
-    GPIO.set_falling_event(18)
+    print('5 second sample for event_detected function')
+    GPIO.add_event_detect(18, GPIO.FALLING)
     time.sleep(5)
     if GPIO.event_detected(18):
         print('Event detected')
     else:
         print('Event not detected')
-
-def test_high():
-    print('High detect test')
-    GPIO.set_high_event(18)
+    print('5 seconds for callback function')
+    input('Press return to start: ')
+    GPIO.remove_event_detect(18);
+    GPIO.add_event_detect(18, GPIO.FALLING, callback=cb)
     time.sleep(5)
-    if GPIO.event_detected(18):
-        print('Event detected')
-    else:
-        print('Event not detected')
-
-def test_low():
-    print('Low detect test (test not implemented)')
+    GPIO.remove_event_detect(18);
 
 def test_gpio_function():
     for chan in range(54):
@@ -81,9 +105,6 @@ def test_setup():
     GPIO.setup(16, GPIO.OUT)
     GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-def test_board_revision():
-    print('Board revision -', GPIO.RPI_REVISION)
-
 # main program starts here
 while 1:
     print('1 - Setup')
@@ -91,8 +112,6 @@ while 1:
     print('I - Input')
     print('R - Rising edge')
     print('F - Falling edge')
-    print('H - High detect')
-    print('L - Low detect')
     print('G - gpio_function')
     print('B - Board revision')
     print('W - Test warnings')
@@ -110,16 +129,12 @@ while 1:
         test_rising()
     elif command.startswith('F'):
         test_falling()
-    elif command.startswith('H'):
-        test_high()
-    elif command.startswith('L'):
-        test_low()
     elif command.startswith('G'):
         test_gpio_function()
     elif command.startswith('W'):
         test_warnings()
     elif command.startswith('B'):
-        test_board_revision()
+        print('Board revision -', GPIO.RPI_REVISION)
     elif command.startswith('V'):
         print('RPi.GPIO Version',GPIO.VERSION)
     elif command.startswith('X'):

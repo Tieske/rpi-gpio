@@ -89,7 +89,7 @@ void clear_event_detect(int gpio)
     *(gpio_map+offset) = 0;
 }
 
-int event_detected(int gpio)
+int eventdetected(int gpio)
 {
 	int offset, value, bit;
    

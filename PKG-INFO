@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: RPi.GPIO
-Version: 0.4.2a
+Version: 0.5.0a
 Summary: A module to control Raspberry Pi GPIO channels
 Home-page: http://code.google.com/p/raspberry-gpio-python/
 Author: Ben Croston
@@ -39,27 +39,32 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
             #   (pull_up_down be PUD_OFF, PUD_UP or PUD_DOWN, default PUD_OFF)
             GPIO.setup(11, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         
-            # input from RPi board pin 11
+            # input from RPi board pin 11.  Will return GPIO.HIGH==1 or GPIO.LOW==0
             input_value = GPIO.input(11)
         
-            # set up rising edge detection (EXPERIMENTAL)
-            set_rising_event(11)
+            # Enable edge detection events
+            #   can be RISING, FALLING or BOTH
+            GPIO.add_event_detect(11, GPIO.RISING)
         
-            # check for an event (EXPERIMENTAL)
+            # Check to see if an event has occurred since the last time we checked (poll)
             if GPIO.event_detected(11):
-                print('Rising edge detected!')
+                print('Rising edge has occurred!')
         
-            # set up falling edge detection (EXPERIMENTAL)
-            GPIO.set_rising_event(11, enable=False)  # disable rising edge detection (as set above)
-            GPIO.set_falling_event(11)
+            # Add a threaded callback for an edge detection event. Note that event detection must be enabled first using add_event_detect()
+            def my_event_callback_function():
+                print('Callback function called!')
+            GPIO.add_event_callback(11, my_event_callback_function)
         
-            # set up high detection (EXPERIMENTAL)
-            GPIO.set_falling_event(11, enable=False)  # disable falling edge detection (as set above)
-            GPIO.set_high_event(11)
+            # Remove edge detection events for a channel
+            GPIO.remove_event_detect(11)
         
-            # set up low detection (EXPERIMENTAL)
-            GPIO.set_high_event(11, enable=False)  # disable high detection (as set above)
-            GPIO.set_low_event(11)
+            # Another way of adding edge detection events with a threaded callback
+            def my_event_callback_function():
+                print('Callback function called!')
+            GPIO.add_event_detect(11, GPIO.RISING, callback=my_event_callback_function)
+            
+            # wait for a button press without polling (uses negligable CPU)
+            GPIO.wait_for_edge(11, GPIO.RISING)
         
             # to change to BCM GPIO numbering
             GPIO.setmode(GPIO.BCM)
@@ -69,6 +74,24 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         
         Change Log
         ==========
+        
+        0.5.0a
+        ------
+        - Added new edge detection events (interrupt handling)
+          - Added add_event_detect()
+          - Added remove_event_detect()
+          - Added add_event_callback()
+          - Added wait_for_edge()
+        - Removed old experimental event functions
+          - Removed set_rising_event()
+          - Removed set_falling_event()
+          - Removed set_high_event()
+          - Removed set_low_event()
+        - Changed event_detected() for new edge detection functionality
+        - input() now returns 0/LOW == False or 1/HIGH == True (integers) instead of False or True (booleans).
+        - Fix error on repeated import (issue 3)
+        - Change SetupException to a RuntimeError so it can be caught on import (issue 25, Chris Hager <chris@linuxuser.at>)
+        - Improved docstrings of functions
         
         0.4.2a
         ------
@@ -135,7 +158,6 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         0.0.1a
         ------
         - First version.  Completely untested until I can get hold of a Raspberry Pi!
-        
         
 Keywords: Raspberry Pi GPIO
 Platform: UNKNOWN

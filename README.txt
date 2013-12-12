@@ -31,27 +31,32 @@ Example Usage :
     #   (pull_up_down be PUD_OFF, PUD_UP or PUD_DOWN, default PUD_OFF)
     GPIO.setup(11, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-    # input from RPi board pin 11
+    # input from RPi board pin 11.  Will return GPIO.HIGH==1 or GPIO.LOW==0
     input_value = GPIO.input(11)
 
-    # set up rising edge detection (EXPERIMENTAL)
-    set_rising_event(11)
+    # Enable edge detection events
+    #   can be RISING, FALLING or BOTH
+    GPIO.add_event_detect(11, GPIO.RISING)
 
-    # check for an event (EXPERIMENTAL)
+    # Check to see if an event has occurred since the last time we checked (poll)
     if GPIO.event_detected(11):
-        print('Rising edge detected!')
+        print('Rising edge has occurred!')
 
-    # set up falling edge detection (EXPERIMENTAL)
-    GPIO.set_rising_event(11, enable=False)  # disable rising edge detection (as set above)
-    GPIO.set_falling_event(11)
+    # Add a threaded callback for an edge detection event. Note that event detection must be enabled first using add_event_detect()
+    def my_event_callback_function():
+        print('Callback function called!')
+    GPIO.add_event_callback(11, my_event_callback_function)
 
-    # set up high detection (EXPERIMENTAL)
-    GPIO.set_falling_event(11, enable=False)  # disable falling edge detection (as set above)
-    GPIO.set_high_event(11)
+    # Remove edge detection events for a channel
+    GPIO.remove_event_detect(11)
 
-    # set up low detection (EXPERIMENTAL)
-    GPIO.set_high_event(11, enable=False)  # disable high detection (as set above)
-    GPIO.set_low_event(11)
+    # Another way of adding edge detection events with a threaded callback
+    def my_event_callback_function():
+        print('Callback function called!')
+    GPIO.add_event_detect(11, GPIO.RISING, callback=my_event_callback_function)
+    
+    # wait for a button press without polling (uses negligable CPU)
+    GPIO.wait_for_edge(11, GPIO.RISING)
 
     # to change to BCM GPIO numbering
     GPIO.setmode(GPIO.BCM)

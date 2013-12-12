@@ -15,5 +15,7 @@ source/c_gpio.c
 source/c_gpio.h
 source/cpuinfo.c
 source/cpuinfo.h
+source/event_gpio.c
+source/event_gpio.h
 source/py_gpio.c
 test/test.py
