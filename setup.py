@@ -4,7 +4,7 @@ distribute_setup.use_setuptools()
 from setuptools import setup, find_packages
 import platform
 
-classifiers = ['Development Status :: 2 - Pre-Alpha',
+classifiers = ['Development Status :: 4 - Beta',
                'Operating System :: POSIX :: Linux',
                'License :: OSI Approved :: MIT License',
                'Intended Audience :: Developers',
@@ -19,7 +19,7 @@ if platform.python_version().startswith('3'):
     extra['use_2to3'] = True
 
 setup(name             = 'RPi.GPIO',
-      version          = '0.1.0',
+      version          = '0.2.0',
       packages         = find_packages(),
       author           = 'Ben Croston',
       author_email     = 'ben@croston.org',

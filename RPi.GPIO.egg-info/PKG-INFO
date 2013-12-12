@@ -1,6 +1,6 @@
-Metadata-Version: 1.1
+Metadata-Version: 1.0
 Name: RPi.GPIO
-Version: 0.1.0
+Version: 0.2.0
 Summary: A class to control Raspberry Pi GPIO channels
 Home-page: http://code.google.com/p/raspberry-gpio-python/
 Author: Ben Croston
@@ -9,6 +9,8 @@ License: MIT
 Description: This package provides a class to control the GPIO on a Raspberry Pi.
         
         Note that this module is unsuitable for real-time or timing critical applications.
+        
+        Note that the current release does not support SPI, I2C or serial functionality on the RPi.
         
         Example Usage :
         
@@ -26,8 +28,20 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
             # output to pin 12
             GPIO.output(12, True)
         
+            # the same script as above but using BCM GPIO 00..nn numbers
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(17, GPIO.IN)
+            GPIO.setup(18, GPIO.OUT)
+            input_value = GPIO.input(17)
+            GPIO.output(18, True)
+        
         Change Log
         ==========
+        0.2.0
+        -----
+        - Changed status from alpha to beta
+        - Added setmode() to be able to use BCM GPIO 00.nn channel numbers
+        - Renamed InvalidPinException to InvalidChannelException
         
         0.1.0
         ------
@@ -54,7 +68,7 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         
 Keywords: Raspberry Pi GPIO
 Platform: UNKNOWN
-Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: Development Status :: 4 - Beta
 Classifier: Operating System :: POSIX :: Linux
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Intended Audience :: Developers

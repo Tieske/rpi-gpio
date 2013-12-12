@@ -25,14 +25,17 @@ import atexit
 
 # pins start from 1, tuple index starts from 0
 _GPIO_PINS = (None, None, None, '0', None, '1', None, '4', '14', None, '15', '17', '18', '21', None, '22', '23', None, '24', '10', None, '9', '25', '11', '8', None, '7')
+_BCM = ('0', '1', '4', '7', '8', '9', '10', '11', '14', '15', '17', '18', '21', '22', '23', '24', '25')
+_MODES = (BOARD, BCM) = range(2)
+_MODE = BOARD  # default mode
 
 IN = 'in'
 OUT = 'out'
 
 _ExportedIds = {}
 
-class InvalidPinException(Exception):
-    """The pin sent is invalid on a Raspberry Pi"""
+class InvalidChannelException(Exception):
+    """The channel sent is invalid on a Raspberry Pi"""
     pass
 
 class InvalidDirectionException(Exception):
@@ -43,22 +46,50 @@ class WrongDirectionException(Exception):
     """The GPIO channel has not been set up or is set up in the wrong direction"""
     pass
 
-def _GetValidId(pin):
+class InvalidModeException(Exception):
+    """An invalid mode was passed to setmode()"""
+    pass
+
+def setmode(mode):
+    """
+    Set up numbering mode to use for channels.
+    BOARD - Use Raspberry Pi board numbers
+    BCM   - Use Broadcom GPIO 00..nn numbers
+    """
+    if mode not in _MODES:
+        raise InvalidModeException
+    global _MODE
+    _MODE = mode
+
+def _GetValidId(channel):
+    if _MODE == BCM:
+        # remove any leading zero from channel
+        try:
+           channel = int(channel)
+        except ValueError:
+            raise InvalidChannelException
+        channel = str(channel)
+        if channel not in _BCM:
+            raise InvalidChannelException
+        return channel
+
+    # default to MODE == BOARD
     try:
-        value = _GPIO_PINS[int(pin)]
+        value = _GPIO_PINS[int(channel)]
     except:
-        raise InvalidPinException
-    if value is None or pin < 1:
-        raise InvalidPinException
+        raise InvalidChannelException
+    if value is None or channel < 1:
+        raise InvalidChannelException
     return value
 
-def setup(pin, direction):
+def setup(channel, direction):
     """
     Set up the GPIO channel and direction
-    pin - RPi board GPIO pin number (not SOC pin number).  Pins start from 1
+    channel   - Either: RPi board pin number (not BCM GPIO 00..nn number).  Pins start from 1
+                or    : BCM GPIO number
     direction - IN or OUT
     """
-    id = _GetValidId(pin)
+    id = _GetValidId(channel)
     if direction != IN and direction != OUT:
         raise InvalidDirectionException
 
@@ -76,17 +107,17 @@ def setup(pin, direction):
         f.write(direction)
     _ExportedIds[id] = direction
 
-def output(pin, value):
+def output(channel, value):
     """Write to a GPIO channel"""
-    id = _GetValidId(pin)
+    id = _GetValidId(channel)
     if id not in _ExportedIds or _ExportedIds[id] != OUT:
         raise WrongDirectionException
     with open('/sys/class/gpio/gpio%s/value'%id, 'w') as f:
         f.write('1' if value else '0')
 
-def input(pin):
+def input(channel):
     """Read from a GPIO channel"""
-    id = _GetValidId(pin)
+    id = _GetValidId(channel)
     if id not in _ExportedIds or _ExportedIds[id] != IN:
         raise WrongDirectionException
     with open('/sys/class/gpio/gpio%s/value'%id, 'r') as f:
@@ -102,8 +133,8 @@ def _unexport():
 atexit.register(_unexport)
 
 if __name__ == '__main__':
-    # assumes pin 11 INPUT
-    #         pin 12 OUTPUT
+    # assumes channel 11 INPUT
+    #         channel 12 OUTPUT
     setup(11, IN)
     setup(12, OUT)
     print(input(11))
