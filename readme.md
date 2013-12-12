@@ -9,5 +9,5 @@ This allows for new updates to the library to be added to the `source_python` br
 
 License
 =======
-See [Ben Crostons' license](https://github.com/Tieske/rpi-gpio/blob/master/LICENSE.txt), and [Andre Simons' license](https://github.com/Tieske/rpi-gpio/blob/master/lua/LICENSE.txt).
-My modifications are under the same license as [Andre Simons'](https://github.com/Tieske/rpi-gpio/blob/master/lua/LICENSE.txt)
+See [Ben Crostons' license](https://github.com/Tieske/rpi-gpio/blob/master/LICENCE.txt), and [Andre Simons' license](https://github.com/Tieske/rpi-gpio/blob/master/lua/LICENCE.txt).
+My modifications are under the same license as [Andre Simons'](https://github.com/Tieske/rpi-gpio/blob/master/lua/LICENCE.txt)
