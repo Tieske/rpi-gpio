@@ -13,7 +13,7 @@ classifiers = ['Development Status :: 3 - Alpha',
                'Topic :: System :: Hardware']
 
 setup(name             = 'RPi.GPIO',
-      version          = '0.3.0a',
+      version          = '0.3.1a',
       packages         = find_packages(),
       author           = 'Ben Croston',
       author_email     = 'ben@croston.org',

@@ -1,11 +1,17 @@
 Change Log
 ==========
+0.3.1a
+------
+- Fixed critical bug with swapped high/low state on outputs
+- Added pull-up / pull-down setup functionality for inputs
+
 0.3.0a
------
+------
 - Rewritten as a C extension
 - Now uses /dev/mem and SoC registers instead of /sys/class/gpio
 - Faster!
 - Make call to GPIO.setmode() mandatory
+- Added GPIO.HIGH and GPIO.LOW constants
 
 0.2.0
 -----

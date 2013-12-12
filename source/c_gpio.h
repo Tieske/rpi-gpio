@@ -21,7 +21,7 @@ SOFTWARE.
 */
 
 int setup(void);
-void setup_gpio(int gpio, int direction);
+void setup_gpio(int gpio, int direction, int pud);
 void output_gpio(int gpio, int value);
 int input_gpio(int gpio);
 void cleanup(void);
@@ -37,3 +37,6 @@ void cleanup(void);
 #define HIGH 1
 #define LOW  0
 
+#define PUD_OFF  0
+#define PUD_DOWN 1
+#define PUD_UP   2

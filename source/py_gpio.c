@@ -27,6 +27,7 @@ static PyObject *WrongDirectionException;
 static PyObject *InvalidModeException;
 static PyObject *InvalidDirectionException;
 static PyObject *InvalidChannelException;
+static PyObject *InvalidPullException;
 static PyObject *ModeNotSetException;
 static PyObject *SetupException;
 static PyObject *high;
@@ -35,6 +36,9 @@ static PyObject *input;
 static PyObject *output;
 static PyObject *board;
 static PyObject *bcm;
+static PyObject *pud_off;
+static PyObject *pud_up;
+static PyObject *pud_down;
 
 static int gpio_direction[54];
 static const int pin_to_gpio[27] = {-1, -1, -1, 0, -1, 1, -1, 4, 14, -1, 15, 17, 18, 21, -1, 22, 23, -1, 24, 10, -1, 9, 25, 11, 8, -1, 7};
@@ -79,18 +83,20 @@ static void gpio_cleanup(void)
       if (gpio_direction[i] != -1)
       {
 //         printf("GPIO %d --> INPUT\n", i);
-         setup_gpio(i, INPUT);
+         setup_gpio(i, INPUT, PUD_OFF);
       }
 
     cleanup();
 }
 
-// python function setup(channel, direction)
-static PyObject *py_setup_channel(PyObject *self, PyObject *args)
+// python function setup(channel, direction, pull_up_down=PUD_OFF)
+static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwargs)
 {
    int gpio, channel, direction;
-
-   if (!PyArg_ParseTuple(args, "ii", &channel, &direction))
+   int pud = PUD_OFF;
+   static char *kwlist[] = {"channel", "direction", "pull_up_down", NULL};
+   
+   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ii|i", kwlist, &channel, &direction, &pud))
       return NULL;
 
    if (direction != INPUT && direction != OUTPUT)
@@ -99,7 +105,16 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args)
       return NULL;
    }
 
-   if (gpio_mode != BCM && gpio_mode != BOARD)
+   if (direction == OUTPUT)
+      pud = PUD_OFF;
+
+   if (pud != PUD_OFF && pud != PUD_DOWN && pud != PUD_UP)
+   {
+      PyErr_SetString(InvalidPullException, "Invalid value for pull_up_down - should be either PUD_OFF, PUD_UP or PUD_DOWN");
+      return NULL;
+   }
+
+   if (gpio_mode != BOARD && gpio_mode != BCM)
    {
       PyErr_SetString(ModeNotSetException, "Please set mode using GPIO.setmode(GPIO.BOARD) or GPIO.setmode(GPIO.BCM)");
       return NULL;
@@ -126,8 +141,8 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args)
       gpio = channel;
    }
 
-//   printf("Setup GPIO %d direction %d\n", gpio, direction);
-   setup_gpio(gpio, direction);
+//   printf("Setup GPIO %d direction %d pud %d\n", gpio, direction, pud);
+   setup_gpio(gpio, direction, pud);
    gpio_direction[gpio] = direction;
 
    Py_INCREF(Py_None);
@@ -248,7 +263,7 @@ static PyObject *setmode(PyObject *self, PyObject *args)
 }
 
 PyMethodDef rpi_gpio_methods[] = {
-   {"setup", py_setup_channel, METH_VARARGS, "Set up the GPIO channel and direction\nchannel   - Either: RPi board pin number (not BCM GPIO 00..nn number).  Pins start from 1\n            or    : BCM GPIO number\ndirection - INPUT or OUTPUT"},
+   {"setup", (PyCFunction)py_setup_channel, METH_VARARGS | METH_KEYWORDS, "Set up the GPIO channel,direction and (optional) pull/up down control\nchannel   - Either: RPi board pin number (not BCM GPIO 00..nn number).  Pins start from 1\n            or    : BCM GPIO number\ndirection - INPUT or OUTPUT\n[pull_up_down] - PUD_OFF (default), PUD_UP or PUD_DOWN"},
    {"output", py_output_gpio, METH_VARARGS, "Output to a GPIO channel"},
    {"input", py_input_gpio, METH_VARARGS, "Input from a GPIO channel"},
    {"setmode", setmode, METH_VARARGS, "Set up numbering mode to use for channels.\nBOARD - Use Raspberry Pi board numbers\nBCM   - Use Broadcom GPIO 00..nn numbers"},
@@ -294,6 +309,9 @@ PyMODINIT_FUNC initGPIO(void)
    InvalidChannelException = PyErr_NewException("RPi.GPIO.InvalidChannelException", NULL, NULL);
    PyModule_AddObject(module, "InvalidChannelException", InvalidChannelException);
 
+   InvalidPullException = PyErr_NewException("RPi.GPIO.InvalidPullException", NULL, NULL);
+   PyModule_AddObject(module, "InvalidPullException", InvalidPullException);
+
    ModeNotSetException = PyErr_NewException("RPi.GPIO.ModeNotSetException", NULL, NULL);
    PyModule_AddObject(module, "ModeNotSetException", ModeNotSetException);
 
@@ -317,6 +335,15 @@ PyMODINIT_FUNC initGPIO(void)
 
    bcm = Py_BuildValue("i", BCM);
    PyModule_AddObject(module, "BCM", bcm);
+   
+   pud_off = Py_BuildValue("i", PUD_OFF);
+   PyModule_AddObject(module, "PUD_OFF", pud_off);
+   
+   pud_up = Py_BuildValue("i", PUD_UP);
+   PyModule_AddObject(module, "PUD_UP", pud_up);
+   
+   pud_down = Py_BuildValue("i", PUD_DOWN);
+   PyModule_AddObject(module, "PUD_DOWN", pud_down);
 
    if (module_setup() != SETUP_OK)
    {

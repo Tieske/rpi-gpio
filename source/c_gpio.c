@@ -75,12 +75,18 @@ int setup(void)
     return SETUP_OK;
 }
 
-void clear_pullupdn(int gpio)
+void set_pullupdn(int gpio, int pud)
 {
     int clk_offset = PULLUPDNCLK_OFFSET + (gpio/32);
     int shift = (gpio%32);
     
-    *(gpio_map+PULLUPDN_OFFSET) &= ~3;
+    if (pud == PUD_DOWN)
+       *(gpio_map+PULLUPDN_OFFSET) = (*(gpio_map+PULLUPDN_OFFSET) & ~3) | PUD_DOWN;
+    else if (pud == PUD_UP)
+       *(gpio_map+PULLUPDN_OFFSET) = (*(gpio_map+PULLUPDN_OFFSET) & ~3) | PUD_UP;
+    else  // pud == PUD_OFF
+       *(gpio_map+PULLUPDN_OFFSET) &= ~3;
+    
     short_wait();
     *(gpio_map+clk_offset) = 1 << shift;
     short_wait();
@@ -88,26 +94,26 @@ void clear_pullupdn(int gpio)
     *(gpio_map+clk_offset) = 0;
 }
 
-void setup_gpio(int gpio, int direction)
+void setup_gpio(int gpio, int direction, int pud)
 {
     int offset = FSEL_OFFSET + (gpio/10);
     int shift = (gpio%10)*3;
 
+    set_pullupdn(gpio, pud);
     if (direction == OUTPUT)
         *(gpio_map+offset) = (*(gpio_map+offset) & ~(7<<shift)) | (1<<shift);
     else  // direction == INPUT
         *(gpio_map+offset) = (*(gpio_map+offset) & ~(7<<shift));
-    clear_pullupdn(gpio);
 }
 
 void output_gpio(int gpio, int value)
 {
     int offset, shift;
     
-    if (value) // value == LOW
-        offset = CLR_OFFSET + (gpio/32);
-    else       // value == HIGH
+    if (value) // value == HIGH
         offset = SET_OFFSET + (gpio/32);
+    else       // value == LOW
+        offset = CLR_OFFSET + (gpio/32);
     
     shift = (gpio%32);
 
