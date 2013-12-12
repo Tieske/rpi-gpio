@@ -1,0 +1,25 @@
+This package is based on the RPi.GPIO Python Module created by Ben Croston.
+
+Get the sources here: https://code.google.com/p/raspberry-gpio-python/downloads/
+
+Unpack the tarball in the parent directory of RPi.GPIO.Lua so that you get the
+following directory structure:
+
+RPi.GPIO-0.5.3a  RPi.GPIO.Lua
+
+./RPi.GPIO-0.5.3a
+./RPi.GPIO-0.5.3a/RPi
+./RPi.GPIO-0.5.3a/source
+./RPi.GPIO-0.5.3a/test
+
+./RPi.GPIO.Lua
+
+Now install the Lua Development package.
+
+On Raspbian:
+sudo apt-get install liblua5.1-0-dev
+
+
+To compile the Lua module, cd to RPi.GPIO.Lua and run make.
+
+A GPIO.so file will be created, which can be used in your Lua scripts.
