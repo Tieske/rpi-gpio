@@ -1,0 +1,46 @@
+Metadata-Version: 1.0
+Name: RPi.GPIO
+Version: 0.0.1a
+Summary: A class to control Raspberry Pi GPIO lines
+Home-page: http://www.wyre-it.co.uk/rpi/gpio
+Author: Ben Croston
+Author-email: ben@croston.org
+License: MIT
+Description: This package provides a class to control the GPIO lines on a Raspberry Pi.
+        
+        Example Usage :
+        
+        ::
+        
+            import RPi.GPIO
+            gpio = RPi.GPIO.GPIO()
+        
+            # set up the GPIO lines
+            gpio.setup(0, RPi.GPIO.IN)
+            gpio.setup(1, RPi.GPIO.OUT)
+        
+            # input from channel 0
+            input_value = gpio.input(0)
+        
+            # output to channel 1
+            gpio.output(1, True)
+        
+        Change Log
+        ==========
+        
+        0.0.1a
+        ------
+        - First version.  Completely untested until I can get hold of a Raspberry Pi!
+        
+        
+Keywords: Raspberry Pi gpio
+Platform: UNKNOWN
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: Operating System :: POSIX :: Linux
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Software Development
+Classifier: Topic :: Home Automation
+Classifier: Topic :: System :: Hardware
