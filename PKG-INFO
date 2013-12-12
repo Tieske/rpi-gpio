@@ -1,6 +1,6 @@
-Metadata-Version: 1.0
+Metadata-Version: 1.1
 Name: RPi.GPIO
-Version: 0.0.3a
+Version: 0.1.0
 Summary: A class to control Raspberry Pi GPIO channels
 Home-page: http://code.google.com/p/raspberry-gpio-python/
 Author: Ben Croston
@@ -17,17 +17,24 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
             import RPi.GPIO as GPIO
         
             # set up the GPIO channels - one input and one output
-            GPIO.setup(0, GPIO.IN)
-            GPIO.setup(1, GPIO.OUT)
+            GPIO.setup(11, GPIO.IN)
+            GPIO.setup(12, GPIO.OUT)
         
-            # input from channel 0
-            input_value = GPIO.input(0)
+            # input from pin 11
+            input_value = GPIO.input(11)
         
-            # output to channel 1
-            GPIO.output(1, True)
+            # output to pin 12
+            GPIO.output(12, True)
         
         Change Log
         ==========
+        
+        0.1.0
+        ------
+        - Fixed direction bug
+        - Added MANIFEST.in (to include missing file)
+        - Changed GPIO channel number to pin number
+        - Tested and working!
         
         0.0.3a
         ------

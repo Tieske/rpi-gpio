@@ -1,0 +1,25 @@
+Change Log
+==========
+
+0.1.0
+------
+- Fixed direction bug
+- Added MANIFEST.in (to include missing file)
+- Changed GPIO channel number to pin number
+- Tested and working!
+
+0.0.3a
+------
+- Added GPIO table
+- Refactored
+- Fixed a few critical bugs
+- Still completely untested!
+
+0.0.2a
+------
+- Internal refactoring.  Still completely untested!
+
+0.0.1a
+------
+- First version.  Completely untested until I can get hold of a Raspberry Pi!
+

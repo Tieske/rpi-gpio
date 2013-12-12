@@ -23,14 +23,16 @@
 import os
 import atexit
 
+# pins start from 1, tuple index starts from 0
+_GPIO_PINS = (None, None, None, '0', None, '1', None, '4', '14', None, '15', '17', '18', '21', None, '22', '23', None, '24', '10', None, '9', '25', '11', '8', None, '7')
+
 IN = 'in'
 OUT = 'out'
-_GPIO_TABLE = ('0', '1', '4', '7', '8', '9', '10', '11', '14', '15', '17', '18', '21', '22', '23', '24', '25')
-_ExportedIds = {}
-_filehandle = {}
 
-class InvalidIdException(Exception):
-    """The Id sent is invalid on a Raspberry Pi"""
+_ExportedIds = {}
+
+class InvalidPinException(Exception):
+    """The pin sent is invalid on a Raspberry Pi"""
     pass
 
 class InvalidDirectionException(Exception):
@@ -41,19 +43,22 @@ class WrongDirectionException(Exception):
     """The GPIO channel has not been set up or is set up in the wrong direction"""
     pass
 
-def _GetValidId(id):
+def _GetValidId(pin):
     try:
-        return _GPIO_TABLE[int(id)]
+        value = _GPIO_PINS[int(pin)]
     except:
-        raise InvalidIdException
+        raise InvalidPinException
+    if value is None or pin < 1:
+        raise InvalidPinException
+    return value
 
-def setup(id, direction):
+def setup(pin, direction):
     """
     Set up the GPIO channel and direction
-    id - GPIO channel (0-16)
+    pin - RPi board GPIO pin number (not SOC pin number).  Pins start from 1
     direction - IN or OUT
     """
-    id = _GetValidId(id)
+    id = _GetValidId(pin)
     if direction != IN and direction != OUT:
         raise InvalidDirectionException
 
@@ -67,31 +72,29 @@ def setup(id, direction):
         f.write(id)
 
     # set i/o direction
-    with open('/sys/class/gpio/gpio%s/direction'%id) as f:
+    with open('/sys/class/gpio/gpio%s/direction'%id, 'w') as f:
         f.write(direction)
-
     _ExportedIds[id] = direction
-    _filehandle[id] = open('/sys/class/gpio/gpio%s/value'%id, 'w' if direction == OUT else 'r')
 
-def output(id, value):
+def output(pin, value):
     """Write to a GPIO channel"""
-    id = _GetValidId(id)
+    id = _GetValidId(pin)
     if id not in _ExportedIds or _ExportedIds[id] != OUT:
         raise WrongDirectionException
-    _filehandle[id].write('1' if value else '0')
+    with open('/sys/class/gpio/gpio%s/value'%id, 'w') as f:
+        f.write('1' if value else '0')
 
-def input(id):
+def input(pin):
     """Read from a GPIO channel"""
-    id = _GetValidId(id)
+    id = _GetValidId(pin)
     if id not in _ExportedIds or _ExportedIds[id] != IN:
         raise WrongDirectionException
-    return _filehandle[id].read() == '1'
+    with open('/sys/class/gpio/gpio%s/value'%id, 'r') as f:
+        return f.read(1) == '1'
 
 # clean up routine
 def _unexport():
     """Clean up by unexporting evey channel that we have set up"""
-    for f in _filehandle:
-        close(f)
     for id in _ExportedIds:
         if os.path.exists('/sys/class/gpio/gpio%s'%id):
             with open('/sys/class/gpio/unexport', 'w') as f:
@@ -99,10 +102,9 @@ def _unexport():
 atexit.register(_unexport)
 
 if __name__ == '__main__':
-    # assumes channel 0 INPUT
-    #         channel 1 OUTPUT
-    setup(0, IN)
-    setup(1, OUT)
-    print(input(0))
-    output(1, True)
-
+    # assumes pin 11 INPUT
+    #         pin 12 OUTPUT
+    setup(11, IN)
+    setup(12, OUT)
+    print(input(11))
+    output(12, True)

@@ -19,7 +19,7 @@ if platform.python_version().startswith('3'):
     extra['use_2to3'] = True
 
 setup(name             = 'RPi.GPIO',
-      version          = '0.0.3a',
+      version          = '0.1.0',
       packages         = find_packages(),
       author           = 'Ben Croston',
       author_email     = 'ben@croston.org',
@@ -30,4 +30,3 @@ setup(name             = 'RPi.GPIO',
       url              = 'http://code.google.com/p/raspberry-gpio-python/',
       classifiers      = classifiers,
       **extra)
-
