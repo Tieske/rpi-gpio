@@ -1,10 +1,8 @@
-#!/usr/bin/env python
 import distribute_setup
 distribute_setup.use_setuptools()
-from setuptools import setup, find_packages
-import platform
+from setuptools import setup, find_packages, Extension
 
-classifiers = ['Development Status :: 4 - Beta',
+classifiers = ['Development Status :: 3 - Alpha',
                'Operating System :: POSIX :: Linux',
                'License :: OSI Approved :: MIT License',
                'Intended Audience :: Developers',
@@ -14,12 +12,8 @@ classifiers = ['Development Status :: 4 - Beta',
                'Topic :: Home Automation',
                'Topic :: System :: Hardware']
 
-extra = {}
-if platform.python_version().startswith('3'):
-    extra['use_2to3'] = True
-
 setup(name             = 'RPi.GPIO',
-      version          = '0.2.0',
+      version          = '0.3.0a',
       packages         = find_packages(),
       author           = 'Ben Croston',
       author_email     = 'ben@croston.org',
@@ -29,4 +23,4 @@ setup(name             = 'RPi.GPIO',
       keywords         = 'Raspberry Pi GPIO',
       url              = 'http://code.google.com/p/raspberry-gpio-python/',
       classifiers      = classifiers,
-      **extra)
+      ext_modules      = [Extension('RPi.GPIO', ['source/py_gpio.c', 'source/c_gpio.c'])])

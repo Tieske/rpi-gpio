@@ -1,0 +1,131 @@
+/*
+Copyright (c) 2012 Ben Croston
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#include <stdint.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include "c_gpio.h"
+
+#define BCM2708_PERI_BASE  0x20000000
+#define GPIO_BASE          (BCM2708_PERI_BASE + 0x200000)
+#define FSEL_OFFSET        0   // 0x0000
+#define SET_OFFSET         7   // 0x001c / 4
+#define CLR_OFFSET         10  // 0x0028 / 4
+#define PINLEVEL_OFFSET    13  // 0x0034 / 4
+#define PULLUPDN_OFFSET    37  // 0x0094 / 4
+#define PULLUPDNCLK_OFFSET 38  // 0x0098 / 4
+
+#define PAGE_SIZE  (4*1024)
+#define BLOCK_SIZE (4*1024)
+
+static volatile uint32_t *gpio_map;
+
+void short_wait(void)
+{
+    int i;
+    
+    for (i=0; i<100; i++)
+    {
+        i++;
+        i--;
+    }
+}
+
+int setup(void)
+{
+    int mem_fd;
+    uint8_t *gpio_mem;
+
+    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0)
+    {
+        return SETUP_DEVMEM_FAIL;
+    }
+
+    if ((gpio_mem = malloc(BLOCK_SIZE + (PAGE_SIZE-1))) == NULL)
+        return SETUP_MALLOC_FAIL;
+
+    if ((uint32_t)gpio_mem % PAGE_SIZE)
+        gpio_mem += PAGE_SIZE - ((uint32_t)gpio_mem % PAGE_SIZE);
+
+    gpio_map = (uint32_t *)mmap( (caddr_t)gpio_mem, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, mem_fd, GPIO_BASE);
+
+    if ((uint32_t)gpio_map < 0)
+        return SETUP_MMAP_FAIL;
+
+    return SETUP_OK;
+}
+
+void clear_pullupdn(int gpio)
+{
+    int clk_offset = PULLUPDNCLK_OFFSET + (gpio/32);
+    int shift = (gpio%32);
+    
+    *(gpio_map+PULLUPDN_OFFSET) &= ~3;
+    short_wait();
+    *(gpio_map+clk_offset) = 1 << shift;
+    short_wait();
+    *(gpio_map+PULLUPDN_OFFSET) &= ~3;
+    *(gpio_map+clk_offset) = 0;
+}
+
+void setup_gpio(int gpio, int direction)
+{
+    int offset = FSEL_OFFSET + (gpio/10);
+    int shift = (gpio%10)*3;
+
+    if (direction == OUTPUT)
+        *(gpio_map+offset) = (*(gpio_map+offset) & ~(7<<shift)) | (1<<shift);
+    else  // direction == INPUT
+        *(gpio_map+offset) = (*(gpio_map+offset) & ~(7<<shift));
+    clear_pullupdn(gpio);
+}
+
+void output_gpio(int gpio, int value)
+{
+    int offset, shift;
+    
+    if (value) // value == LOW
+        offset = CLR_OFFSET + (gpio/32);
+    else       // value == HIGH
+        offset = SET_OFFSET + (gpio/32);
+    
+    shift = (gpio%32);
+
+    *(gpio_map+offset) = 1 << shift;
+}
+
+int input_gpio(int gpio)
+{
+   int offset, value, mask;
+   
+   offset = PINLEVEL_OFFSET + (gpio/32);
+   mask = (1 << gpio%32);
+   value = *(gpio_map+offset) & mask;
+   return value;
+}
+
+void cleanup(void)
+{
+    // fixme - set all gpios back to input
+    munmap((caddr_t)gpio_map, BLOCK_SIZE);
+}

@@ -1,3 +1,11 @@
-python setup.py install
+Make sure that you have the Python development source installed first!
+On Debian:
+$ apt-get install python-dev
+   or
+$ apt-get install python3-dev
+
+To install the module:
+
+$ python setup.py install
   or
-python3 setup.py install
+$ python3 setup.py install

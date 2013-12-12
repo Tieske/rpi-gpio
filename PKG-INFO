@@ -1,6 +1,6 @@
-Metadata-Version: 1.0
+Metadata-Version: 1.1
 Name: RPi.GPIO
-Version: 0.2.0
+Version: 0.3.0a
 Summary: A class to control Raspberry Pi GPIO channels
 Home-page: http://code.google.com/p/raspberry-gpio-python/
 Author: Ben Croston
@@ -8,15 +8,19 @@ Author-email: ben@croston.org
 License: MIT
 Description: This package provides a class to control the GPIO on a Raspberry Pi.
         
-        Note that this module is unsuitable for real-time or timing critical applications.
+        Note that this module is unsuitable for real-time or timing critical applications.  This is because you can not predict when Python will be busy garbage collecting.  It also runs under the Linux kernel which is not suitable for real time applications - it is multitasking O/S and another process may be given priority over the CPU, causing jitter in your program.  If you are after true real-time performance and predictability, buy yourself an Arduino http://www.arduino.cc !
         
-        Note that the current release does not support SPI, I2C or serial functionality on the RPi.
+        Note that the current release does not support SPI, I2C, PWM or serial functionality on the RPi yet.
+        This is planned for the near future - watch this space!  One-wire functionality is also planned.
         
         Example Usage :
         
         ::
         
             import RPi.GPIO as GPIO
+        
+            # to use Raspberry Pi board pin numbers
+            GPIO.setmode(GPIO.BOARD)
         
             # set up the GPIO channels - one input and one output
             GPIO.setup(11, GPIO.IN)
@@ -37,6 +41,13 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         
         Change Log
         ==========
+        0.3.0a
+        -----
+        - Rewritten as a C extension
+        - Now uses /dev/mem and SoC registers instead of /sys/class/gpio
+        - Faster!
+        - Make call to GPIO.setmode() mandatory
+        
         0.2.0
         -----
         - Changed status from alpha to beta
@@ -68,7 +79,7 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         
 Keywords: Raspberry Pi GPIO
 Platform: UNKNOWN
-Classifier: Development Status :: 4 - Beta
+Classifier: Development Status :: 3 - Alpha
 Classifier: Operating System :: POSIX :: Linux
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Intended Audience :: Developers
