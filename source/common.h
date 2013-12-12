@@ -32,3 +32,4 @@ int gpio_direction[54];
 
 int get_gpio_number(int channel, unsigned int *gpio);
 int setup_error;
+int module_setup;

@@ -25,7 +25,6 @@ SOFTWARE.
 #include "py_pwm.h"
 #include "common.h"
 #include "c_gpio.h"
-#include "exceptions.h"
 
 typedef struct
 {
@@ -51,7 +50,7 @@ static int PWM_init(PWMObject *self, PyObject *args, PyObject *kwds)
     // ensure channel set as output
     if (gpio_direction[self->gpio] != OUTPUT)
     {
-        PyErr_SetString(WrongDirectionException, "You must setup() the GPIO channel as an output first");
+        PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an output first");
         return -1;
     }
 
@@ -84,8 +83,7 @@ static PyObject *PWM_start(PWMObject *self, PyObject *args)
     self->dutycycle = dutycycle;
     pwm_set_duty_cycle(self->gpio, self->dutycycle);
     pwm_start(self->gpio);
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 // python method PWM.ChangeDutyCycle(self, dutycycle)
@@ -103,8 +101,7 @@ static PyObject *PWM_ChangeDutyCycle(PWMObject *self, PyObject *args)
 
     self->dutycycle = dutycycle;
     pwm_set_duty_cycle(self->gpio, self->dutycycle);
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 // python method PWM. ChangeFrequency(self, frequency)
@@ -124,23 +121,21 @@ static PyObject *PWM_ChangeFrequency(PWMObject *self, PyObject *args)
     self->freq = frequency;
 
     pwm_set_frequency(self->gpio, self->freq);
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 // python function PWM.stop(self)
 static PyObject *PWM_stop(PWMObject *self, PyObject *args)
 {
-   pwm_stop(self->gpio);
-   Py_INCREF(Py_None);
-   return Py_None;
+    pwm_stop(self->gpio);
+    Py_RETURN_NONE;
 }
 
 // deallocation method
 static void PWM_dealloc(PWMObject *self)
 {
-   pwm_stop(self->gpio);
-   Py_TYPE(self)->tp_free((PyObject*)self);
+    pwm_stop(self->gpio);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyMethodDef

@@ -36,8 +36,8 @@ def test_rising():
     
     try:
         GPIO.add_event_detect(LED_PIN, GPIO.RISING)
-        print('Fail - added event to an output, not produced AddEventException')
-    except GPIO.WrongDirectionException:
+        print('Fail - added event to an output, not produced RuntimeError')
+    except RuntimeError:
         pass
     GPIO.add_event_detect(SWITCH_PIN, GPIO.RISING)
     time.sleep(5)

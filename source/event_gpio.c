@@ -61,7 +61,7 @@ struct gpio_exp *exported_gpios = NULL;
 pthread_t threads;
 int event_occurred[54] = { 0 };
 int thread_running = 0;
-int epfd;
+int epfd = -1;
 
 int gpio_export(unsigned int gpio)
 {
@@ -412,6 +412,10 @@ int add_edge_detect(unsigned int gpio, unsigned int edge)
         return 2;
     add_fd_list(gpio,fd);
 
+    // create epfd if not already open
+    if ((epfd == -1) && ((epfd = epoll_create(1)) == -1))
+        return 2;
+
     // add to epoll fd
     ev.events = EPOLLIN | EPOLLET | EPOLLPRI;
     ev.data.fd = fd;
@@ -422,9 +426,7 @@ int add_edge_detect(unsigned int gpio, unsigned int edge)
     if (!thread_running)
     {
         if (pthread_create(&threads, NULL, poll_thread, (void *)t) != 0)
-        {
             return 2;
-        }
     }
 
     return 0;
@@ -464,15 +466,9 @@ int event_detected(unsigned int gpio)
     }
 }
 
-int event_initialise(void)
-{
-    if ((epfd = epoll_create(1)) == -1)
-        return 1;
-    return 0;
-}
-
 void event_cleanup(void)
 {
+    close(epfd);
     thread_running = 0;
     exports_cleanup();
 }
@@ -537,5 +533,6 @@ int blocking_wait_for_edge(unsigned int gpio, unsigned int edge)
     // clean up
     gpio_unexport(gpio);
     close(fd);
+    close(epfd);
     return 0;
 }

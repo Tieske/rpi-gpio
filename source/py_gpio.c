@@ -25,7 +25,6 @@ SOFTWARE.
 #include "event_gpio.h"
 #include "py_pwm.h"
 #include "cpuinfo.h"
-#include "exceptions.h"
 #include "constants.h"
 #include "common.h"
 
@@ -42,12 +41,12 @@ struct py_callback
 };
 static struct py_callback *py_callbacks = NULL;
 
-// setup function run on import of the RPi.GPIO module
-static int module_setup(void)
+static int init_module(void)
 {
    int i, result;
 
-//   printf("Setup module (mmap)\n");
+   module_setup = 0;
+
    for (i=0; i<54; i++)
       gpio_direction[i] = -1;
 
@@ -60,9 +59,10 @@ static int module_setup(void)
       PyErr_NoMemory();
       return SETUP_MALLOC_FAIL;
    } else if (result == SETUP_MMAP_FAIL) {
-      PyErr_SetString(PyExc_RuntimeError, "Mmap failed on module import");
+      PyErr_SetString(PyExc_RuntimeError, "Mmap of GPIO registers failed");
       return SETUP_MALLOC_FAIL;
    } else { // result == SETUP_OK
+      module_setup = 1;
       return SETUP_OK;
    }
 }
@@ -70,22 +70,24 @@ static int module_setup(void)
 // python function cleanup()
 static PyObject *py_cleanup(PyObject *self, PyObject *args)
 {
-    int i;
+   int i;
 
-    // clean up any /sys/class exports
-    event_cleanup();
+   if (module_setup && !setup_error)
+   {
+      // clean up any /sys/class exports
+      event_cleanup();
 
-    // set everything back to input
-    for (i=0; i<54; i++)
-        if (gpio_direction[i] != -1)
-        {
-//            printf("GPIO %d --> INPUT\n", i);
+      // set everything back to input
+      for (i=0; i<54; i++)
+      {
+         if (gpio_direction[i] != -1)
+         {
             setup_gpio(i, INPUT, PUD_OFF);
             gpio_direction[i] = -1;
-        }
-
-   Py_INCREF(Py_None);
-   return Py_None;
+         }
+      }
+   }
+   Py_RETURN_NONE;
 }
 
 // python function setup(channel, direction, pull_up_down=PUD_OFF, initial=None)
@@ -101,12 +103,23 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ii|ii", kwlist, &channel, &direction, &pud, &initial))
       return NULL;
 
+   // check module has been imported cleanly
+   if (setup_error)
+   {
+      PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
+      return NULL;
+   }
+
+   // run init_module if module not set up
+   if (!module_setup && (init_module() != SETUP_OK))
+      return NULL;
+
    if (get_gpio_number(channel, &gpio))
-       return NULL;
+      return NULL;
 
    if (direction != INPUT && direction != OUTPUT)
    {
-      PyErr_SetString(InvalidDirectionException, "An invalid direction was passed to setup()");
+      PyErr_SetString(PyExc_ValueError, "An invalid direction was passed to setup()");
       return NULL;
    }
 
@@ -115,7 +128,7 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
 
    if (pud != PUD_OFF && pud != PUD_DOWN && pud != PUD_UP)
    {
-      PyErr_SetString(InvalidPullException, "Invalid value for pull_up_down - should be either PUD_OFF, PUD_UP or PUD_DOWN");
+      PyErr_SetString(PyExc_ValueError, "Invalid value for pull_up_down - should be either PUD_OFF, PUD_UP or PUD_DOWN");
       return NULL;
    }
 
@@ -127,17 +140,14 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
       PyErr_WarnEx(NULL, "This channel is already in use, continuing anyway.  Use GPIO.setwarnings(False) to disable warnings.", 1);
    }
 
-//   printf("Setup GPIO %d direction %d pud %d\n", gpio, direction, pud);
    if (direction == OUTPUT && (initial == LOW || initial == HIGH))
    {
-//      printf("Writing intial value %d\n",initial);
       output_gpio(gpio, initial);
    }
    setup_gpio(gpio, direction, pud);
    gpio_direction[gpio] = direction;
 
-   Py_INCREF(Py_None);
-   return Py_None;
+   Py_RETURN_NONE;
 }
 
 // python function output(channel, value)
@@ -154,15 +164,12 @@ static PyObject *py_output_gpio(PyObject *self, PyObject *args)
 
    if (gpio_direction[gpio] != OUTPUT)
    {
-      PyErr_SetString(WrongDirectionException, "The GPIO channel has not been set up as an OUTPUT");
+      PyErr_SetString(PyExc_RuntimeError, "The GPIO channel has not been set up as an OUTPUT");
       return NULL;
    }
 
-//   printf("Output GPIO %d value %d\n", gpio, value);
    output_gpio(gpio, value);
-
-   Py_INCREF(Py_None);
-   return Py_None;
+   Py_RETURN_NONE;
 }
 
 // python function value = input(channel)
@@ -181,11 +188,9 @@ static PyObject *py_input_gpio(PyObject *self, PyObject *args)
    // check channel is set up as an input or output
    if (gpio_direction[gpio] != INPUT && gpio_direction[gpio] != OUTPUT)
    {
-      PyErr_SetString(WrongDirectionException, "You must setup() the GPIO channel first");
+      PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel first");
       return NULL;
    }
-
-   //   printf("Input GPIO %d\n", gpio);
 
    if (input_gpio(gpio)) {
       value = Py_BuildValue("i", HIGH);
@@ -196,25 +201,24 @@ static PyObject *py_input_gpio(PyObject *self, PyObject *args)
 }
 
 // python function setmode(mode)
-static PyObject *setmode(PyObject *self, PyObject *args)
+static PyObject *py_setmode(PyObject *self, PyObject *args)
 {
    if (!PyArg_ParseTuple(args, "i", &gpio_mode))
       return NULL;
 
    if (setup_error)
    {
-      PyErr_SetString(SetupException, "Module not imported correctly!");
+      PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
       return NULL;
    }
 
    if (gpio_mode != BOARD && gpio_mode != BCM)
    {
-      PyErr_SetString(InvalidModeException, "An invalid mode was passed to setmode()");
+      PyErr_SetString(PyExc_ValueError, "An invalid mode was passed to setmode()");
       return NULL;
    }
 
-   Py_INCREF(Py_None);
-   return Py_None;
+   Py_RETURN_NONE;
 }
 
 static unsigned int chan_from_gpio(unsigned int gpio)
@@ -315,21 +319,20 @@ static PyObject *py_add_event_callback(PyObject *self, PyObject *args, PyObject 
    // check channel is set up as an input
    if (gpio_direction[gpio] != INPUT)
    {
-      PyErr_SetString(WrongDirectionException, "You must setup() the GPIO channel as an input first");
+      PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an input first");
       return NULL;
    }
 
    if (!gpio_event_added(gpio))
    {
-      PyErr_SetString(AddEventException, "Add event detection using add_event_detect first before adding a callback");
+      PyErr_SetString(PyExc_RuntimeError, "Add event detection using add_event_detect first before adding a callback");
       return NULL;
    }
 
    if (add_py_callback(gpio, bouncetime, cb_func) != 0)
       return NULL;
 
-   Py_INCREF(Py_None);
-   return Py_None;
+   Py_RETURN_NONE;
 }
 
 // python function add_event_detect(gpio, edge, callback=None, bouncetime=0
@@ -356,14 +359,14 @@ static PyObject *py_add_event_detect(PyObject *self, PyObject *args, PyObject *k
    // check channel is set up as an input
    if (gpio_direction[gpio] != INPUT)
    {
-      PyErr_SetString(WrongDirectionException, "You must setup() the GPIO channel as an input first");
+      PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an input first");
       return NULL;
    }
 
    // is edge valid value
    if (edge != RISING_EDGE && edge != FALLING_EDGE && edge != BOTH_EDGE)
    {
-      PyErr_SetString(InvalidEdgeException, "The edge must be set to RISING, FALLING or BOTH");
+      PyErr_SetString(PyExc_ValueError, "The edge must be set to RISING, FALLING or BOTH");
       return NULL;
    }
 
@@ -371,10 +374,10 @@ static PyObject *py_add_event_detect(PyObject *self, PyObject *args, PyObject *k
    {
       if (result == 1)
       {
-         PyErr_SetString(AddEventException, "Edge detection already enabled for this GPIO channel");
+         PyErr_SetString(PyExc_RuntimeError, "Edge detection already enabled for this GPIO channel");
          return NULL;
       } else {
-         PyErr_SetString(AddEventException, "Failed to add edge detection");
+         PyErr_SetString(PyExc_RuntimeError, "Failed to add edge detection");
          return NULL;
       }
    }
@@ -383,8 +386,7 @@ static PyObject *py_add_event_detect(PyObject *self, PyObject *args, PyObject *k
       if (add_py_callback(gpio, bouncetime, cb_func) != 0)
          return NULL;
 
-   Py_INCREF(Py_None);
-   return Py_None;
+   Py_RETURN_NONE;
 }
 
 // python function remove_event_detect(gpio)
@@ -423,8 +425,7 @@ static PyObject *py_remove_event_detect(PyObject *self, PyObject *args)
 
    remove_edge_detect(gpio);
 
-   Py_INCREF(Py_None);
-   return Py_None;
+   Py_RETURN_NONE;
 }
 
 // python function value = event_detected(channel)
@@ -439,7 +440,6 @@ static PyObject *py_event_detected(PyObject *self, PyObject *args)
    if (get_gpio_number(channel, &gpio))
        return NULL;
 
-   // printf("Detect event GPIO %d\n", gpio);
    if (event_detected(gpio))
       Py_RETURN_TRUE;
    else
@@ -457,19 +457,19 @@ static PyObject *py_wait_for_edge(PyObject *self, PyObject *args)
       return NULL;
 
    if (get_gpio_number(channel, &gpio))
-       return NULL;
+      return NULL;
 
    // check channel is setup as an input
    if (gpio_direction[gpio] != INPUT)
    {
-      PyErr_SetString(WrongDirectionException, "You must setup() the GPIO channel as an input first");
+      PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an input first");
       return NULL;
    }
 
    // is edge a valid value?
    if (edge != RISING_EDGE && edge != FALLING_EDGE && edge != BOTH_EDGE)
    {
-      PyErr_SetString(InvalidEdgeException, "The edge must be set to RISING, FALLING or BOTH");
+      PyErr_SetString(PyExc_ValueError, "The edge must be set to RISING, FALLING or BOTH");
       return NULL;
    }
 
@@ -481,13 +481,15 @@ static PyObject *py_wait_for_edge(PyObject *self, PyObject *args)
       Py_INCREF(Py_None);
       return Py_None;
    } else if (result == 2) {
-      PyErr_SetString(AddEventException, "Edge detection events already enabled for this GPIO channel");
+      PyErr_SetString(PyExc_RuntimeError, "Edge detection events already enabled for this GPIO channel");
       return NULL;
    } else {
       sprintf(error, "Error #%d waiting for edge", result);
       PyErr_SetString(PyExc_RuntimeError, error);
       return NULL;
    }
+   
+   Py_RETURN_NONE;
 }
 
 // python function value = gpio_function(gpio)
@@ -502,9 +504,12 @@ static PyObject *py_gpio_function(PyObject *self, PyObject *args)
 
    if (setup_error)
    {
-      PyErr_SetString(SetupException, "Module not imported correctly!");
+      PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
       return NULL;
    }
+
+   if (!module_setup && (init_module() != SETUP_OK))
+      return NULL;
 
    f = gpio_function(gpio);
    switch (f)
@@ -524,12 +529,11 @@ static PyObject *py_setwarnings(PyObject *self, PyObject *args)
 
    if (setup_error)
    {
-      PyErr_SetString(SetupException, "Module not imported correctly!");
+      PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
       return NULL;
    }
 
-   Py_INCREF(Py_None);
-   return Py_None;
+   Py_RETURN_NONE;
 }
 
 static const char moduledocstring[] = "GPIO functionality of a Raspberry Pi using Python";
@@ -539,7 +543,7 @@ PyMethodDef rpi_gpio_methods[] = {
    {"cleanup", py_cleanup, METH_VARARGS, "Clean up by resetting all GPIO channels that have been used by this program to INPUT with no pullup/pulldown and no event detection"},
    {"output", py_output_gpio, METH_VARARGS, "Output to a GPIO channel\ngpio  - gpio channel\nvalue - 0/1 or False/True or LOW/HIGH"},
    {"input", py_input_gpio, METH_VARARGS, "Input from a GPIO channel.  Returns HIGH=1=True or LOW=0=False\ngpio - gpio channel"},
-   {"setmode", setmode, METH_VARARGS, "Set up numbering mode to use for channels.\nBOARD - Use Raspberry Pi board numbers\nBCM   - Use Broadcom GPIO 00..nn numbers"},
+   {"setmode", py_setmode, METH_VARARGS, "Set up numbering mode to use for channels.\nBOARD - Use Raspberry Pi board numbers\nBCM   - Use Broadcom GPIO 00..nn numbers"},
    {"add_event_detect", (PyCFunction)py_add_event_detect, METH_VARARGS | METH_KEYWORDS, "Enable edge detection events for a particular GPIO channel.\nchannel      - either board pin number or BCM number depending on which mode is set.\nedge         - RISING, FALLING or BOTH\n[callback]   - A callback function for the event (optional)\n[bouncetime] - Switch bounce timeout in ms for callback"},
    {"remove_event_detect", py_remove_event_detect, METH_VARARGS, "Remove edge detection for a particular GPIO channel\ngpio - gpio channel"},
    {"event_detected", py_event_detected, METH_VARARGS, "Returns True if an edge has occured on a given GPIO.  You need to enable edge detection using add_event_detect() first.\ngpio - gpio channel"},
@@ -577,7 +581,6 @@ PyMODINIT_FUNC initGPIO(void)
       return;
 #endif
 
-   define_exceptions(module);
    define_constants(module);
 
    // detect board revision and set up accordingly
@@ -600,17 +603,6 @@ PyMODINIT_FUNC initGPIO(void)
    rpi_revision = Py_BuildValue("i", revision);
    PyModule_AddObject(module, "RPI_REVISION", rpi_revision);
 
-   // set up mmaped areas
-   if (module_setup() != SETUP_OK )
-   {
-      setup_error = 1;
-#if PY_MAJOR_VERSION > 2
-      return NULL;
-#else
-      return;
-#endif
-   }
-
    // Add PWM class
    if (PWM_init_PWMType() == NULL)
 #if PY_MAJOR_VERSION > 2
@@ -620,9 +612,6 @@ PyMODINIT_FUNC initGPIO(void)
 #endif
    Py_INCREF(&PWMType);
    PyModule_AddObject(module, "PWM", (PyObject*)&PWMType);
-
-   // initialise events
-   event_initialise();
 
    if (!PyEval_ThreadsInitialized())
       PyEval_InitThreads();

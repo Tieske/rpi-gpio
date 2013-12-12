@@ -1,6 +1,4 @@
-import distribute_setup
-distribute_setup.use_setuptools()
-from setuptools import setup, Extension, find_packages
+from distutils.core import setup, Extension
 
 classifiers = ['Development Status :: 3 - Alpha',
                'Operating System :: POSIX :: Linux',
@@ -14,7 +12,7 @@ classifiers = ['Development Status :: 3 - Alpha',
                'Topic :: System :: Hardware']
 
 setup(name             = 'RPi.GPIO',
-      version          = '0.5.2a',
+      version          = '0.5.3a',
       author           = 'Ben Croston',
       author_email     = 'ben@croston.org',
       description      = 'A module to control Raspberry Pi GPIO channels',
@@ -23,5 +21,5 @@ setup(name             = 'RPi.GPIO',
       keywords         = 'Raspberry Pi GPIO',
       url              = 'http://code.google.com/p/raspberry-gpio-python/',
       classifiers      = classifiers,
-      packages         = find_packages(),
-      ext_modules      = [Extension('RPi.GPIO', ['source/py_gpio.c', 'source/c_gpio.c', 'source/cpuinfo.c', 'source/event_gpio.c', 'source/soft_pwm.c', 'source/py_pwm.c', 'source/common.c', 'source/exceptions.c', 'source/constants.c'])])
+      packages         = ['RPi'],
+      ext_modules      = [Extension('RPi.GPIO', ['source/py_gpio.c', 'source/c_gpio.c', 'source/cpuinfo.c', 'source/event_gpio.c', 'source/soft_pwm.c', 'source/py_pwm.c', 'source/common.c', 'source/constants.c'])])
