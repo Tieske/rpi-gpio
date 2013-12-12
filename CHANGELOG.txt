@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+0.4.2a
+------
+- Fix for installing on Arch Linux (Python 3.3) (issue 20)
+- Initial value when setting a channel as an output (issue 19)
+
 0.4.1a
 ------
 - Added VERSION

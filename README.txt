@@ -24,6 +24,9 @@ Example Usage :
     # set RPi board pin 12 high
     GPIO.output(12, GPIO.HIGH)
 
+    # set up GPIO output channel with an initial state
+    GPIO.setup(26, GPIO.OUT, initial=GPIO.LOW)
+
     # set up GPIO input with pull-up control
     #   (pull_up_down be PUD_OFF, PUD_UP or PUD_DOWN, default PUD_OFF)
     GPIO.setup(11, GPIO.IN, pull_up_down=GPIO.PUD_UP)

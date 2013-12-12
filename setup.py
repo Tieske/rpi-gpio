@@ -14,10 +14,10 @@ classifiers = ['Development Status :: 3 - Alpha',
                'Topic :: System :: Hardware']
 
 setup(name             = 'RPi.GPIO',
-      version          = '0.4.1a',
+      version          = '0.4.2a',
       author           = 'Ben Croston',
       author_email     = 'ben@croston.org',
-      description      = 'A class to control Raspberry Pi GPIO channels',
+      description      = 'A module to control Raspberry Pi GPIO channels',
       long_description = open('README.txt').read() + open('CHANGELOG.txt').read(),
       license          = 'MIT',
       keywords         = 'Raspberry Pi GPIO',

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2012 Ben Croston
+Copyright (c) 2012-2013 Ben Croston
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -146,15 +146,16 @@ static int verify_input(int channel, int *gpio)
     return 1;
 }
 
-// python function setup(channel, direction, pull_up_down=PUD_OFF)
+// python function setup(channel, direction, pull_up_down=PUD_OFF, initial=None)
 static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwargs)
 {
    int gpio, channel, direction;
    int pud = PUD_OFF;
-   static char *kwlist[] = {"channel", "direction", "pull_up_down", NULL};
+   int initial = -1;
+   static char *kwlist[] = {"channel", "direction", "pull_up_down", "initial", NULL};
    int func;
    
-   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ii|i", kwlist, &channel, &direction, &pud))
+   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ii|ii", kwlist, &channel, &direction, &pud, &initial))
       return NULL;
 
    if (direction != INPUT && direction != OUTPUT)
@@ -212,6 +213,11 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
    set_falling_event(gpio, 0);
    set_high_event(gpio, 0);
    set_low_event(gpio, 0);
+   if (direction == OUTPUT && (initial == LOW || initial == HIGH))
+   {
+//      printf("Writing intial value %d\n",initial);
+      output_gpio(gpio, initial);
+   }
    setup_gpio(gpio, direction, pud);
    gpio_direction[gpio] = direction;
 
@@ -424,7 +430,7 @@ static PyObject *py_setwarnings(PyObject *self, PyObject *args)
 }
 
 PyMethodDef rpi_gpio_methods[] = {
-   {"setup", (PyCFunction)py_setup_channel, METH_VARARGS | METH_KEYWORDS, "Set up the GPIO channel,direction and (optional) pull/up down control\nchannel   - Either: RPi board pin number (not BCM GPIO 00..nn number).  Pins start from 1\n            or    : BCM GPIO number\ndirection - INPUT or OUTPUT\n[pull_up_down] - PUD_OFF (default), PUD_UP or PUD_DOWN"},
+   {"setup", (PyCFunction)py_setup_channel, METH_VARARGS | METH_KEYWORDS, "Set up the GPIO channel, direction and (optional) pull/up down control\nchannel   - Either: RPi board pin number (not BCM GPIO 00..nn number).  Pins start from 1\n            or    : BCM GPIO number\ndirection - INPUT or OUTPUT\n[pull_up_down] - PUD_OFF (default), PUD_UP or PUD_DOWN\n[initial]      - Initial value for an output channel"},
    {"cleanup", py_cleanup, METH_VARARGS, "Clean up by resetting all GPIO channels that have been used by this program to INPUT with no pullup/pulldown and no event detection"},
    {"output", py_output_gpio, METH_VARARGS, "Output to a GPIO channel"},
    {"input", py_input_gpio, METH_VARARGS, "Input from a GPIO channel"},
@@ -535,10 +541,10 @@ PyMODINIT_FUNC initGPIO(void)
    }
    rpi_revision = Py_BuildValue("i", revision);
    PyModule_AddObject(module, "RPI_REVISION", rpi_revision);
-   
-   version = Py_BuildValue("s", "0.4.1a");
+
+   version = Py_BuildValue("s", "0.4.2a");
    PyModule_AddObject(module, "VERSION", version);
-   
+
    // set up mmaped areas
    if (module_setup() != SETUP_OK )
    {
