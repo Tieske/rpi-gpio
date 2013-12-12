@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: RPi.GPIO
-Version: 0.0.2a
+Version: 0.0.3a
 Summary: A class to control Raspberry Pi GPIO channels
 Home-page: http://code.google.com/p/raspberry-gpio-python/
 Author: Ben Croston
@@ -8,25 +8,33 @@ Author-email: ben@croston.org
 License: MIT
 Description: This package provides a class to control the GPIO on a Raspberry Pi.
         
+        Note that this module is unsuitable for real-time or timing critical applications.
+        
         Example Usage :
         
         ::
         
-            import RPi.GPIO
-            gpio = RPi.GPIO.GPIO()
+            import RPi.GPIO as GPIO
         
-            # set up the GPIO lines
-            gpio.setup(0, RPi.GPIO.IN)
-            gpio.setup(1, RPi.GPIO.OUT)
+            # set up the GPIO channels - one input and one output
+            GPIO.setup(0, GPIO.IN)
+            GPIO.setup(1, GPIO.OUT)
         
             # input from channel 0
-            input_value = gpio.input(0)
+            input_value = GPIO.input(0)
         
             # output to channel 1
-            gpio.output(1, True)
+            GPIO.output(1, True)
         
         Change Log
         ==========
+        
+        0.0.3a
+        ------
+        - Added GPIO table
+        - Refactored
+        - Fixed a few critical bugs
+        - Still completely untested!
         
         0.0.2a
         ------
@@ -37,7 +45,7 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         - First version.  Completely untested until I can get hold of a Raspberry Pi!
         
         
-Keywords: Raspberry Pi gpio
+Keywords: Raspberry Pi GPIO
 Platform: UNKNOWN
 Classifier: Development Status :: 2 - Pre-Alpha
 Classifier: Operating System :: POSIX :: Linux

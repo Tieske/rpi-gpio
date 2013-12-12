@@ -19,14 +19,14 @@ if platform.python_version().startswith('3'):
     extra['use_2to3'] = True
 
 setup(name             = 'RPi.GPIO',
-      version          = '0.0.2a',
+      version          = '0.0.3a',
       packages         = find_packages(),
       author           = 'Ben Croston',
       author_email     = 'ben@croston.org',
       description      = 'A class to control Raspberry Pi GPIO channels',
       long_description = open('README.txt').read() + open('CHANGELOG.txt').read(),
       license          = 'MIT',
-      keywords         = 'Raspberry Pi gpio',
+      keywords         = 'Raspberry Pi GPIO',
       url              = 'http://code.google.com/p/raspberry-gpio-python/',
       classifiers      = classifiers,
       **extra)

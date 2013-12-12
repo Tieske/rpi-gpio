@@ -1,19 +1,20 @@
 This package provides a class to control the GPIO on a Raspberry Pi.
 
+Note that this module is unsuitable for real-time or timing critical applications.
+
 Example Usage :
 
 ::
 
-    import RPi.GPIO
-    gpio = RPi.GPIO.GPIO()
+    import RPi.GPIO as GPIO
 
-    # set up the GPIO lines
-    gpio.setup(0, RPi.GPIO.IN)
-    gpio.setup(1, RPi.GPIO.OUT)
+    # set up the GPIO channels - one input and one output
+    GPIO.setup(0, GPIO.IN)
+    GPIO.setup(1, GPIO.OUT)
 
     # input from channel 0
-    input_value = gpio.input(0)
+    input_value = GPIO.input(0)
 
     # output to channel 1
-    gpio.output(1, True)
+    GPIO.output(1, True)
 

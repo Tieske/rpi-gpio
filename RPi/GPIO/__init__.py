@@ -25,10 +25,9 @@ import atexit
 
 IN = 'in'
 OUT = 'out'
-_validids = (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15)
+_GPIO_TABLE = ('0', '1', '4', '7', '8', '9', '10', '11', '14', '15', '17', '18', '21', '22', '23', '24', '25')
 _ExportedIds = {}
 _filehandle = {}
-atexit.register(_unexport)
 
 class InvalidIdException(Exception):
     """The Id sent is invalid on a Raspberry Pi"""
@@ -42,68 +41,68 @@ class WrongDirectionException(Exception):
     """The GPIO channel has not been set up or is set up in the wrong direction"""
     pass
 
-class GPIO(object):
+def _GetValidId(id):
+    try:
+        return _GPIO_TABLE[int(id)]
+    except:
+        raise InvalidIdException
+
+def setup(id, direction):
     """
-    A class to control the GPIO on a Raspberry Pi
+    Set up the GPIO channel and direction
+    id - GPIO channel (0-16)
+    direction - IN or OUT
     """
-    def _CheckValidId(self, id):
-        if (type(id) == str and not isdigit(id)) and type(id) != int:
-            raise InvalidIdException
-        if id not in _validids:
-            raise InvalidIdException
+    id = _GetValidId(id)
+    if direction != IN and direction != OUT:
+        raise InvalidDirectionException
 
-    def setup(self, id, direction):
-        """Set up the GPIO channel and direction"""
-        self._CheckValidId(id)
-        id = str(id)
-        if direction != IN and direction != OUT:
-            raise InvalidDirectionException
-
-        # unexport if it exists
-        if os.path.exists('/sys/class/gpio/gpio%s'%id:
-            with f as open('/sys/class/gpio/unexport', 'w'):
-                f.write(id)
-
-        # export
-        with f as open('/sys/class/gpio/export', 'w'):
+    # unexport if it exists
+    if os.path.exists('/sys/class/gpio/gpio%s'%id):
+        with open('/sys/class/gpio/unexport', 'w') as f:
             f.write(id)
 
-        # set i/o direction
-        with f as open('/sys/class/gpio/gpio%s/direction'%id):
-            f.write(direction)
+    # export
+    with open('/sys/class/gpio/export', 'w') as f:
+        f.write(id)
 
-        _ExportedIds[id] = direction
-        _filehandle[id] = open('/sys/class/gpio/gpio%s/value'%id, 'w' if direction == OUT else 'r')
+    # set i/o direction
+    with open('/sys/class/gpio/gpio%s/direction'%id) as f:
+        f.write(direction)
 
-    def output(self, id, value):
-        """Write to a GPIO channel"""
-        self._CheckValidId(id)
-        if id not in _ExportedIds or _ExportedIds[id] != OUT:
-            raise WrongDirectionException
-        _filehandle[id].write('1' if value else '0')
+    _ExportedIds[id] = direction
+    _filehandle[id] = open('/sys/class/gpio/gpio%s/value'%id, 'w' if direction == OUT else 'r')
 
-    def input(self, id):
-        """Read from a GPIO channel"""
-        self._CheckValidId(id)
-        if id not in _ExportedIds or _ExportedIds[id] != IN:
-            raise WrongDirectionException
-        return _filehandle[id].read() == '1'
+def output(id, value):
+    """Write to a GPIO channel"""
+    id = _GetValidId(id)
+    if id not in _ExportedIds or _ExportedIds[id] != OUT:
+        raise WrongDirectionException
+    _filehandle[id].write('1' if value else '0')
 
+def input(id):
+    """Read from a GPIO channel"""
+    id = _GetValidId(id)
+    if id not in _ExportedIds or _ExportedIds[id] != IN:
+        raise WrongDirectionException
+    return _filehandle[id].read() == '1'
+
+# clean up routine
 def _unexport():
-    """Clean up by unexporting eveything that we have set up"""
+    """Clean up by unexporting evey channel that we have set up"""
     for f in _filehandle:
         close(f)
     for id in _ExportedIds:
         if os.path.exists('/sys/class/gpio/gpio%s'%id):
-            with f as open('/sys/class/gpio/unexport', 'w'):
-                f.write(str(id))
+            with open('/sys/class/gpio/unexport', 'w') as f:
+                f.write(id)
+atexit.register(_unexport)
 
 if __name__ == '__main__':
     # assumes channel 0 INPUT
     #         channel 1 OUTPUT
-    gpio = GPIO()
-    gpio.setup(0, IN)
-    gpio.setup(1, OUT)
-    print(gpio.input(0))
-    gpio.output(1, True)
+    setup(0, IN)
+    setup(1, OUT)
+    print(input(0))
+    output(1, True)
 
