@@ -20,16 +20,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#define NO_EDGE      0
-#define RISING_EDGE  1
-#define FALLING_EDGE 2
-#define BOTH_EDGE    3
+PyObject *high;
+PyObject *low;
+PyObject *input;
+PyObject *output;
+PyObject *alt0;
+PyObject *board;
+PyObject *bcm;
+PyObject *pud_off;
+PyObject *pud_up;
+PyObject *pud_down;
+PyObject *rising_edge;
+PyObject *falling_edge;
+PyObject *both_edge;
+PyObject *version;
 
-int add_edge_detect(unsigned int gpio, unsigned int edge);
-void remove_edge_detect(unsigned int gpio);
-int add_edge_callback(unsigned int gpio, void (*func)(unsigned int gpio));
-int event_detected(unsigned int gpio);
-int gpio_event_added(unsigned int gpio);
-int event_initialise(void);
-void event_cleanup(void);
-int blocking_wait_for_edge(unsigned int gpio, unsigned int edge);
+void define_constants(PyObject *module);

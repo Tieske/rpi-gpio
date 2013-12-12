@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+0.5.2a
+------
+- Added software PWM (experimental)
+- Added switch bounce handling to event callbacks
+- Added channel number parameter to event callbacks (issue 31)
+- Internal refactoring and code tidy up
+
 0.5.1a
 ------
 - Fixed callbacks for multiple GPIOs (issue 28)

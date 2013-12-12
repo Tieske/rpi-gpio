@@ -1,74 +1,95 @@
 import time
 import RPi.GPIO as GPIO
 
+LED_PIN = 12
+SWITCH_PIN = 18
+
 def test_output():
     print('OUTPUT test')
     for i in range(10):
             time.sleep(0.1)
-            GPIO.output(16, GPIO.HIGH)
-            if GPIO.input(16) != GPIO.HIGH:
+            GPIO.output(LED_PIN, GPIO.HIGH)
+            if GPIO.input(LED_PIN) != GPIO.HIGH:
                     print('Read back of output failed.')
             time.sleep(0.1)
-            GPIO.output(16, GPIO.LOW)
-            if GPIO.input(16) != GPIO.LOW:
+            GPIO.output(LED_PIN, GPIO.LOW)
+            if GPIO.input(LED_PIN) != GPIO.LOW:
                     print('Read back of output failed.')
 
 def test_input():
     print('INPUT test (Ctrl-C to stop)')
     try:
         while 1:
-            GPIO.output(16, GPIO.input(18))
+            GPIO.output(LED_PIN, GPIO.input(SWITCH_PIN))
             time.sleep(0.02)  # 20 ms
     except KeyboardInterrupt:
         return
 
 def test_rising():
-    def cb():
+    def cb(chan):
         xprint('Callback 1 - this should produce an exception')
-    def cb2():
-        print('Callback 2 called')
+    def cb2(chan):
+        print('Callback 2 called - channel %s'%chan)
         
     print('Rising edge test')
     print('5 second sample for event_detected function')
     
     try:
-        GPIO.add_event_detect(16, GPIO.RISING)
+        GPIO.add_event_detect(LED_PIN, GPIO.RISING)
         print('Fail - added event to an output, not produced AddEventException')
     except GPIO.WrongDirectionException:
         pass
-    GPIO.add_event_detect(18, GPIO.RISING)
+    GPIO.add_event_detect(SWITCH_PIN, GPIO.RISING)
     time.sleep(5)
-    if GPIO.event_detected(18):
+    if GPIO.event_detected(SWITCH_PIN):
         print('Event detected')
     else:
         print('Event not detected')
     print('5 seconds for callback function (which should produce exceptions)')
     input('Press return to start: ')
-    GPIO.add_event_callback(18, cb)
-    GPIO.add_event_callback(18, cb2)
+    GPIO.add_event_callback(SWITCH_PIN, cb)
+    GPIO.add_event_callback(SWITCH_PIN, cb2)
     time.sleep(5)
-    GPIO.remove_event_detect(18);
+    GPIO.remove_event_detect(SWITCH_PIN);
     print('Blocking wait for rising edge...')
-    GPIO.wait_for_edge(18, GPIO.RISING)
+    GPIO.wait_for_edge(SWITCH_PIN, GPIO.RISING)
     
 def test_falling():
-    def cb():
-        print('Callback called!')
+    def cb(chan):
+        print('Callback called - channel %s'%chan)
         
     print('Falling edge test')
     print('5 second sample for event_detected function')
-    GPIO.add_event_detect(18, GPIO.FALLING)
+    GPIO.add_event_detect(SWITCH_PIN, GPIO.FALLING)
     time.sleep(5)
-    if GPIO.event_detected(18):
+    if GPIO.event_detected(SWITCH_PIN):
         print('Event detected')
     else:
         print('Event not detected')
     print('5 seconds for callback function')
     input('Press return to start: ')
-    GPIO.remove_event_detect(18);
-    GPIO.add_event_detect(18, GPIO.FALLING, callback=cb)
+    GPIO.remove_event_detect(SWITCH_PIN);
+    GPIO.add_event_detect(SWITCH_PIN, GPIO.FALLING, callback=cb)
     time.sleep(5)
-    GPIO.remove_event_detect(18);
+    GPIO.remove_event_detect(SWITCH_PIN);
+
+def test_switchbounce():
+    global count 
+    count = 0
+
+    def cb(chan):
+        global count
+        count += 1
+        print('Switch on channel %s pressed %s!'%(chan,count))
+        
+    print('Switch bounce test - Ctrl-C to stop...')
+    GPIO.add_event_detect(SWITCH_PIN, GPIO.FALLING, callback=cb, bouncetime=200)
+    try:
+        while 1:
+            time.sleep(3600)
+    except KeyboardInterrupt:
+        pass
+    GPIO.remove_event_detect(SWITCH_PIN);
 
 def test_gpio_function():
     for chan in range(54):
@@ -99,11 +120,30 @@ def test_setup():
     GPIO.setup(26, GPIO.OUT, initial=GPIO.HIGH) # or True
     if not GPIO.input(26):
         print('Initial state test failed')
-    GPIO.setup(16, GPIO.OUT, initial=GPIO.LOW) # or False
-    if GPIO.input(16):
+    GPIO.setup(LED_PIN, GPIO.OUT, initial=GPIO.LOW) # or False
+    if GPIO.input(LED_PIN):
         print('Initial state test failed')
-    GPIO.setup(16, GPIO.OUT)
-    GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(LED_PIN, GPIO.OUT)
+    GPIO.setup(SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+def test_soft_pwm():
+    print('Running software PWM tests (ctrl-c to stop)...')
+    pwm = GPIO.PWM(LED_PIN, 50)   # frequency  - 50Hz
+    pwm.start(0)                  # duty cycle - 0 (off)
+    try:
+        while 1:   # make the LED fade in and out
+            for x in range(0,101,5):
+                pwm.ChangeDutyCycle(x)
+                time.sleep(0.1)
+            for x in range(100,-1,-5):
+                pwm.ChangeDutyCycle(x)
+                time.sleep(0.1)
+    except KeyboardInterrupt:
+        pass
+    pwm.stop()
+
+def test_hard_pwm():
+    print('Hardware PWM - not yet implemented')
 
 # main program starts here
 while 1:
@@ -112,6 +152,9 @@ while 1:
     print('I - Input')
     print('R - Rising edge')
     print('F - Falling edge')
+    print('P - Software PWM')
+    print('H - Hardware PWM')
+    print('S - Switchbounce')
     print('G - gpio_function')
     print('B - Board revision')
     print('W - Test warnings')
@@ -129,6 +172,12 @@ while 1:
         test_rising()
     elif command.startswith('F'):
         test_falling()
+    elif command.startswith('P'):
+        test_soft_pwm()
+    elif command.startswith('H'):
+        test_hard_pwm()
+    elif command.startswith('S'):
+        test_switchbounce()
     elif command.startswith('G'):
         test_gpio_function()
     elif command.startswith('W'):

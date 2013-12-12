@@ -20,16 +20,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#define NO_EDGE      0
-#define RISING_EDGE  1
-#define FALLING_EDGE 2
-#define BOTH_EDGE    3
+PyObject *AddEventException;
+PyObject *WrongDirectionException;
+PyObject *InvalidModeException;
+PyObject *InvalidDirectionException;
+PyObject *InvalidChannelException;
+PyObject *InvalidPullException;
+PyObject *InvalidEdgeException;
+PyObject *ModeNotSetException;
+PyObject *SetupException;
 
-int add_edge_detect(unsigned int gpio, unsigned int edge);
-void remove_edge_detect(unsigned int gpio);
-int add_edge_callback(unsigned int gpio, void (*func)(unsigned int gpio));
-int event_detected(unsigned int gpio);
-int gpio_event_added(unsigned int gpio);
-int event_initialise(void);
-void event_cleanup(void);
-int blocking_wait_for_edge(unsigned int gpio, unsigned int edge);
+void define_exceptions(PyObject *module);

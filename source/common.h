@@ -20,16 +20,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#define NO_EDGE      0
-#define RISING_EDGE  1
-#define FALLING_EDGE 2
-#define BOTH_EDGE    3
+#define MODE_UNKNOWN -1
+#define BOARD        10
+#define BCM          11
 
-int add_edge_detect(unsigned int gpio, unsigned int edge);
-void remove_edge_detect(unsigned int gpio);
-int add_edge_callback(unsigned int gpio, void (*func)(unsigned int gpio));
-int event_detected(unsigned int gpio);
-int gpio_event_added(unsigned int gpio);
-int event_initialise(void);
-void event_cleanup(void);
-int blocking_wait_for_edge(unsigned int gpio, unsigned int edge);
+int gpio_mode;
+const int pin_to_gpio_rev1[27];
+const int pin_to_gpio_rev2[27];
+const int (*pin_to_gpio)[27];
+int gpio_direction[54];
+
+int get_gpio_number(int channel, unsigned int *gpio);
+int setup_error;

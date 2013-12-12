@@ -1,7 +1,7 @@
 If you are using Raspbian, all you need to do to install the latest release is:
-$ sudo apt-get install python-rpi.gpio
-   or
-$ sudo apt-get install python3-rpi.gpio
+$ sudo apt-get update
+$ sudo apt-get dist-upgrade
+$ sudo apt-get install python-rpi.gpio python3-rpi.gpio
 
 ------------
 
@@ -9,9 +9,7 @@ If you want to build your own version from this downloaded copy, make
 sure that you have the Python development source installed first!
 
 On Raspbian:
-$ sudo apt-get install python-dev
-   or
-$ sudo apt-get install python3-dev
+$ sudo apt-get install python-dev python3-dev
 
 To install the module:
 

@@ -45,7 +45,7 @@ struct fdx *fd_list = NULL;
 struct callback
 {
     unsigned int gpio;
-    void (*func)(int gpio);
+    void (*func)(unsigned int gpio);
     struct callback *next;
 };
 struct callback *callbacks = NULL;
@@ -53,7 +53,7 @@ struct callback *callbacks = NULL;
 // gpio exports
 struct gpio_exp
 {
-    int gpio;
+    unsigned int gpio;
     struct gpio_exp *next;
 };
 struct gpio_exp *exported_gpios = NULL;
@@ -257,7 +257,7 @@ void exports_cleanup(void)
         gpio_unexport(exported_gpios->gpio);
 }
 
-int add_edge_callback(unsigned int gpio, void (*func)(int gpio))
+int add_edge_callback(unsigned int gpio, void (*func)(unsigned int gpio))
 {
     struct callback *cb = callbacks;
     struct callback *new_cb;

@@ -1,1 +1,1 @@
-Fixed callbacks for multiple GPIOs (issue 28)
+Added tag 0.5.2a for changeset 7cff636a3322

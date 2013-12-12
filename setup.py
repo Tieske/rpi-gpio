@@ -14,7 +14,7 @@ classifiers = ['Development Status :: 3 - Alpha',
                'Topic :: System :: Hardware']
 
 setup(name             = 'RPi.GPIO',
-      version          = '0.5.1a',
+      version          = '0.5.2a',
       author           = 'Ben Croston',
       author_email     = 'ben@croston.org',
       description      = 'A module to control Raspberry Pi GPIO channels',
@@ -24,4 +24,4 @@ setup(name             = 'RPi.GPIO',
       url              = 'http://code.google.com/p/raspberry-gpio-python/',
       classifiers      = classifiers,
       packages         = find_packages(),
-      ext_modules      = [Extension('RPi.GPIO', ['source/py_gpio.c', 'source/c_gpio.c', 'source/cpuinfo.c', 'source/event_gpio.c'])])
+      ext_modules      = [Extension('RPi.GPIO', ['source/py_gpio.c', 'source/c_gpio.c', 'source/cpuinfo.c', 'source/event_gpio.c', 'source/soft_pwm.c', 'source/py_pwm.c', 'source/common.c', 'source/exceptions.c', 'source/constants.c'])])
