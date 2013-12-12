@@ -369,13 +369,13 @@ static int add_py_callback(unsigned int gpio, PyObject *cb_func)
    new_py_cb->next = NULL;
    if (py_callbacks == NULL) {
       py_callbacks = new_py_cb;
-      add_edge_callback(gpio, run_py_callbacks);
    } else {
       // add to end of list
       while (cb->next != NULL)
          cb = cb->next;
       cb->next = new_py_cb;
    }
+   add_edge_callback(gpio, run_py_callbacks);
    return 0;
 }
 
@@ -749,7 +749,7 @@ PyMODINIT_FUNC initGPIO(void)
    rpi_revision = Py_BuildValue("i", revision);
    PyModule_AddObject(module, "RPI_REVISION", rpi_revision);
 
-   version = Py_BuildValue("s", "0.5.0a");
+   version = Py_BuildValue("s", "0.5.1a");
    PyModule_AddObject(module, "VERSION", version);
 
    // set up mmaped areas
