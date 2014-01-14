@@ -20,6 +20,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define LUA_MODULE_VERSION "0.5.4 (Lua)"
+
+
+
+
 #include <errno.h>
 #include <string.h>
 
@@ -296,7 +301,7 @@ int luaopen_GPIO (lua_State *L){
    result = setup();
    if (result == SETUP_DEVMEM_FAIL)
    {
-      return luaL_error(L, "No access to /dev/mem.  Try running as root!");
+      return luaL_error(L, "GPIO module has no access to /dev/mem.  Try running as root!");
    } else if (result == SETUP_MALLOC_FAIL) {
       return luaL_error(L, "No memory!");
    } else if (result == SETUP_MMAP_FAIL) {
@@ -345,7 +350,7 @@ int luaopen_GPIO (lua_State *L){
   lua_pushnumber(L, BOTH_EDGE);
   lua_setfield(L, -2, "BOTH_EDGE");
 
-  lua_pushstring(L, "0.5.3a (Lua)");
+  lua_pushstring(L, LUA_MODULE_VERSION);
   lua_setfield(L, -2, "VERSION");
   
   
