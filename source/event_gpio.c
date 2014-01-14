@@ -157,40 +157,40 @@ int gpio_unexport(unsigned int gpio)
             g = g->next;
         }
     }
-	return 0;
+    return 0;
 }
 
 int gpio_set_direction(unsigned int gpio, unsigned int in_flag)
 {
-	int fd;
-	char filename[33];
+    int fd;
+    char filename[33];
 
-	snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%d/direction", gpio);
-	if ((fd = open(filename, O_WRONLY)) < 0)
-		return -1;
+    snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%d/direction", gpio);
+    if ((fd = open(filename, O_WRONLY)) < 0)
+        return -1;
 
-	if (in_flag)
-		write(fd, "in", 3);
-	else
-		write(fd, "out", 4);
+    if (in_flag)
+        write(fd, "in", 3);
+    else
+        write(fd, "out", 4);
 
-	close(fd);
-	return 0;
+    close(fd);
+    return 0;
 }
 
 int gpio_set_edge(unsigned int gpio, unsigned int edge)
 {
-	int fd;
-	char filename[28];
+    int fd;
+    char filename[28];
 
-	snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%d/edge", gpio);
+    snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%d/edge", gpio);
 
-	if ((fd = open(filename, O_WRONLY)) < 0)
+    if ((fd = open(filename, O_WRONLY)) < 0)
         return -1;
 
-	write(fd, stredge[edge], strlen(stredge[edge]) + 1);
-	close(fd);
-	return 0;
+    write(fd, stredge[edge], strlen(stredge[edge]) + 1);
+    close(fd);
+    return 0;
 }
 
 int add_fd_list(unsigned int gpio, int fd)

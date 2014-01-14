@@ -11,5 +11,5 @@ This is planned for the near future - watch this space!  One-wire functionality 
 
 Although hardware PWM is not available yet, software PWM is available to use on all channels.
 
-For examples and documentation, visit http://code.google.com/p/raspberry-gpio-python/wiki/Main
+For examples and documentation, visit http://sourceforge.net/p/raspberry-gpio-python/wiki/Home/
 
