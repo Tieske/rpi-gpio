@@ -28,6 +28,9 @@ build = {
         "source/event_gpio.c",
         "source/soft_pwm.c",
       },
+      libraries = {
+        "pthread"
+      },
       incdirs = {
         "source",
       },
