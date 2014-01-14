@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+0.5.4
+-----
+- Changed release status (from alpha to full release)
+- Warn when GPIO.cleanup() used with nothing to clean up (issue 44)
+- Avoid collisions in constants (e.g. HIGH / RISING / PUD_DOWN)
+- Accept BOARD numbers in gpio_function (issue 34)
+- More return values for gpio_function (INPUT, OUTPUT, SPI, I2C, PWM, SERIAL, UNKNOWN)
+- Tidy up docstrings
+- Fix /dev/mem access error with gpio_function
+
 0.5.3a
 ------
 - Allow pydoc for non-root users (issue 27)

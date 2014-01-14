@@ -1,20 +1,21 @@
 import time
 import RPi.GPIO as GPIO
 
+GND_PIN = 6    # not used by program but needs to be connected!
 LED_PIN = 12
 SWITCH_PIN = 18
 
 def test_output():
     print('OUTPUT test')
     for i in range(10):
-            time.sleep(0.1)
-            GPIO.output(LED_PIN, GPIO.HIGH)
-            if GPIO.input(LED_PIN) != GPIO.HIGH:
-                    print('Read back of output failed.')
-            time.sleep(0.1)
-            GPIO.output(LED_PIN, GPIO.LOW)
-            if GPIO.input(LED_PIN) != GPIO.LOW:
-                    print('Read back of output failed.')
+        time.sleep(0.1)
+        GPIO.output(LED_PIN, GPIO.HIGH)
+        if GPIO.input(LED_PIN) != GPIO.HIGH:
+            print('Read back of output failed.')
+        time.sleep(0.1)
+        GPIO.output(LED_PIN, GPIO.LOW)
+        if GPIO.input(LED_PIN) != GPIO.LOW:
+            print('Read back of output failed.')
 
 def test_input():
     print('INPUT test (Ctrl-C to stop)')
@@ -39,6 +40,13 @@ def test_rising():
         print('Fail - added event to an output, not produced RuntimeError')
     except RuntimeError:
         pass
+
+    try:
+        GPIO.add_event_detect(SWITCH_PIN, GPIO.HIGH)
+        print('Fail- managed to set HIGH as an event')
+    except ValueError:
+        pass
+
     GPIO.add_event_detect(SWITCH_PIN, GPIO.RISING)
     time.sleep(5)
     if GPIO.event_detected(SWITCH_PIN):
@@ -59,6 +67,13 @@ def test_falling():
         print('Callback called - channel %s'%chan)
         
     print('Falling edge test')
+
+    try:
+        GPIO.add_event_detect(SWITCH_PIN, GPIO.LOW)
+        print('Fail- managed to set LOW as an event')
+    except ValueError:
+        pass
+
     print('5 second sample for event_detected function')
     GPIO.add_event_detect(SWITCH_PIN, GPIO.FALLING)
     time.sleep(5)
@@ -72,6 +87,15 @@ def test_falling():
     GPIO.add_event_detect(SWITCH_PIN, GPIO.FALLING, callback=cb)
     time.sleep(5)
     GPIO.remove_event_detect(SWITCH_PIN);
+
+    try:
+        GPIO.wait_for_edge(SWITCH_PIN, GPIO.LOW)
+        print('Fail- managed to wait for a LOW as an event')
+    except ValueError:
+        pass
+
+    print('Blocking wait for falling edge...')
+    GPIO.wait_for_edge(SWITCH_PIN, GPIO.FALLING)
 
 def test_switchbounce():
     global count 
@@ -92,17 +116,30 @@ def test_switchbounce():
     GPIO.remove_event_detect(SWITCH_PIN);
 
 def test_gpio_function():
+    GPIO.setmode(GPIO.BCM)
     for chan in range(54):
-        f = GPIO.gpio_function(chan)
-        if f == GPIO.IN:
-            func = 'INPUT'
-        elif f == GPIO.OUT:
-            func = 'OUTPUT'
-        elif f == GPIO.ALT0:
-            func = 'ALT0'
-        else:
-            func = 'UNKNOWN'
-        print('chan=%s func=%s'%(chan,func))
+        try:
+            f = GPIO.gpio_function(chan)
+            if f == GPIO.IN:
+                func = 'INPUT'
+            elif f == GPIO.OUT:
+                func = 'OUTPUT'
+            elif f == GPIO.SERIAL:
+                func = 'SERIAL'
+            elif f == GPIO.I2C:
+                func = 'I2C'
+            elif f == GPIO.SPI:
+                func = 'SPI'
+            elif f == GPIO.PWM:
+                func = 'PWM'        
+            elif f == GPIO.UNKNOWN:
+                func = 'UNKNOWN'
+            else:
+                func = 'ERROR'
+            print('GPIO %s func=%s'%(chan,func))
+        except ValueError: # ignore unused channels
+            pass
+    GPIO.setmode(GPIO.BOARD)
 
 def test_warnings():
     GPIO.setwarnings(False)
@@ -116,6 +153,11 @@ def test_warnings():
 
 def test_setup():
     print('Running setup tests...')
+
+    print('GPIO.cleanup() - warning should be produced here vvv')
+    GPIO.cleanup()
+    print('^^^')
+
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(26, GPIO.OUT, initial=GPIO.HIGH) # or True
     if not GPIO.input(26):
@@ -124,6 +166,13 @@ def test_setup():
     if GPIO.input(LED_PIN):
         print('Initial state test failed')
     GPIO.setup(LED_PIN, GPIO.OUT)
+
+    try:
+        GPIO.setup(SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.HIGH)
+        print('Fail - Managed to set pull_up_down of HIGH')
+    except ValueError:
+        pass
+
     GPIO.setup(SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def test_soft_pwm():

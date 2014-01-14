@@ -20,11 +20,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define PY_PUD_CONST_OFFSET 20
+#define PY_EVENT_CONST_OFFSET 30
+
 PyObject *high;
 PyObject *low;
 PyObject *input;
 PyObject *output;
-PyObject *alt0;
+PyObject *pwm;
+PyObject *serial;
+PyObject *i2c;
+PyObject *spi;
+PyObject *unknown;
 PyObject *board;
 PyObject *bcm;
 PyObject *pud_off;

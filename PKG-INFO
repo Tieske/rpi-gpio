@@ -1,8 +1,8 @@
 Metadata-Version: 1.1
 Name: RPi.GPIO
-Version: 0.5.3a
+Version: 0.5.4
 Summary: A module to control Raspberry Pi GPIO channels
-Home-page: http://code.google.com/p/raspberry-gpio-python/
+Home-page: http://sourceforge.net/projects/raspberry-gpio-python/
 Author: Ben Croston
 Author-email: ben@croston.org
 License: MIT
@@ -19,10 +19,20 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         
         Although hardware PWM is not available yet, software PWM is available to use on all channels.
         
-        For examples and documentation, visit http://code.google.com/p/raspberry-gpio-python/wiki/Main
+        For examples and documentation, visit http://sourceforge.net/p/raspberry-gpio-python/wiki/Home/
         
         Change Log
         ==========
+        
+        0.5.4
+        -----
+        - Changed release status (from alpha to full release)
+        - Warn when GPIO.cleanup() used with nothing to clean up (issue 44)
+        - Avoid collisions in constants (e.g. HIGH / RISING / PUD_DOWN)
+        - Accept BOARD numbers in gpio_function (issue 34)
+        - More return values for gpio_function (INPUT, OUTPUT, SPI, I2C, PWM, SERIAL, UNKNOWN)
+        - Tidy up docstrings
+        - Fix /dev/mem access error with gpio_function
         
         0.5.3a
         ------
@@ -129,7 +139,7 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         
 Keywords: Raspberry Pi GPIO
 Platform: UNKNOWN
-Classifier: Development Status :: 3 - Alpha
+Classifier: Development Status :: 5 - Production/Stable
 Classifier: Operating System :: POSIX :: Linux
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Intended Audience :: Developers
