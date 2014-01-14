@@ -20,7 +20,7 @@ dependencies = {
 build = {
   type = "builtin",
   modules = {
-    ["rpi-gpio"] = {
+    ["GPIO"] = {
       sources = {
         "lua/RPi_GPIO_Lua_module.c",
         "source/c_gpio.c",
