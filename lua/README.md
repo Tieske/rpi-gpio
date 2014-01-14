@@ -33,7 +33,7 @@ GPIO.cleanup()
 
 There are some Lua scripts contained in the package which were tested on a Pi Rev 2 board.
 
-[Examples and documentation of the Lua module](http://www.andre-simon.de)
+[Examples and documentation of the original Lua module](http://www.andre-simon.de)
 
 [Examples and documentation of the Python module](http://sourceforge.net/p/raspberry-gpio-python/wiki/)
 
@@ -48,7 +48,7 @@ Clone the git repository, or download the tarball and unpack.
 
 To compile the Lua module, cd to `rpi-gpio/lua` and run `make`. A `GPIO.so` file will be created, which can be used in your Lua scripts.
 
-Alternatively use LuaRocks; `sudo luarocks make` (in the `rpi-gpio.lua` directory)
+Alternatively use LuaRocks; `sudo luarocks make` (in the `rpi-gpio/lua` directory)
 
 Example
 -------

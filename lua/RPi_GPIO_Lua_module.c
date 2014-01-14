@@ -279,11 +279,19 @@ static const struct luaL_Reg gpio_lib[] = {
   { "gpio_function", lua_gpio_function},
   { "setwarnings", lua_setwarnings},
   
+  // interrupts and events
   { "add_event_detect", lua_nimpl},
   { "remove_event_detect", lua_nimpl},
   { "event_detected", lua_nimpl},
   { "add_event_callback", lua_nimpl},
   { "wait_for_edge", lua_nimpl},
+  
+  // PWM
+  { "PWM", lua_nimpl},
+  { "start", lua_nimpl},
+  { "ChangeFrequency", lua_nimpl},
+  { "ChangeDutyCycle", lua_nimpl},
+  { "stop", lua_nimpl},
 
   {NULL, NULL}
 };
