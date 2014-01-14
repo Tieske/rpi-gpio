@@ -7,7 +7,12 @@ It contains two branches, the first being [source_python](https://github.com/Tie
 
 This allows for new updates to the library to be added to the `source_python` branch and be merged with the Lua binding in `master`. And it has all source code in one repo.
 
+Lua module
+==========
+
+see the [Lua module readme](https://github.com/Tieske/rpi-gpio/blob/master/lua/README.md) for details.
+
 License
 =======
-See [Ben Crostons' license](https://github.com/Tieske/rpi-gpio/blob/master/LICENCE.txt), and [Andre Simons' license](https://github.com/Tieske/rpi-gpio/blob/master/lua/LICENCE.txt).
+MIT, see [Ben Crostons' license](https://github.com/Tieske/rpi-gpio/blob/master/LICENCE.txt), and [Andre Simons' license](https://github.com/Tieske/rpi-gpio/blob/master/lua/LICENCE.txt).
 My modifications are under the same license as [Andre Simons'](https://github.com/Tieske/rpi-gpio/blob/master/lua/LICENCE.txt)
