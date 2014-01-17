@@ -268,7 +268,7 @@ static int lua_gpio_function(lua_State* L)
       lua_pushnil(L);
       return 1;
    }
-   if (get_gpio_number(channel, &gpio))
+   if (lua_get_gpio_number(channel, &gpio))
    {
       lua_pushnil(L);
       return 1;
