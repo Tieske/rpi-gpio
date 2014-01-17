@@ -100,7 +100,7 @@ static int lua_setup_channel(lua_State *L)
 {
    unsigned int gpio;
    int channel, direction;
-   int pud = PUD_OFF;
+   int pud = PUD_OFF + PY_PUD_CONST_OFFSET;
    int initial = -1;
    int func;
    
@@ -152,8 +152,9 @@ static int lua_setup_channel(lua_State *L)
    }
 
    if (direction == OUTPUT)
-      pud = PUD_OFF;
+      pud = PUD_OFF + PY_PUD_CONST_OFFSET;
 
+   pud -= PY_PUD_CONST_OFFSET;
    if (pud != PUD_OFF && pud != PUD_DOWN && pud != PUD_UP)
    {
       return luaL_error(L,  "Invalid value for pull_up_down - should be either PUD_OFF, PUD_UP or PUD_DOWN");
@@ -227,6 +228,7 @@ static int lua_input_gpio(lua_State* L)
 static int lua_cleanup(lua_State* L)
 {
    int i;
+   int found = 0;
 
 
     // clean up any /sys/class exports
@@ -239,9 +241,16 @@ static int lua_cleanup(lua_State* L)
       {
 	  setup_gpio(i, INPUT, PUD_OFF);
 	  gpio_direction[i] = -1;
+      found = 1;
       }
     }
    
+   // check if any channels set up - if not warn about misuse of GPIO.cleanup()
+   if (!found && gpio_warnings)
+   {
+      fprintf(stderr, "No channels have been set up yet - nothing to clean up!  Try cleaning up at the end of your program instead! Use GPIO.setwarnings(False) to disable warnings.");
+   }
+
    return 0;
 }
 
@@ -252,14 +261,47 @@ static int lua_gpio_function(lua_State* L)
    
    gpio = luaL_checkint(L, 1);
 
+   // run init_module if module not set up
    if (init_module() != SETUP_OK)
       lua_pushnil(L);
+
+   if (get_gpio_number(channel, &gpio))
+      lua_pushnil(L);
+ 
 
    f = gpio_function(gpio);
    switch (f)
    {
       case 0 : f = INPUT;  break;
       case 1 : f = OUTPUT; break;
+      case 4 : switch (gpio)
+               {
+                  case 0 :
+                  case 1 : if (revision == 1) f = I2C; else f = MODE_UNKNOWN;
+                           break;
+
+                  case 2 :
+                  case 3 : if (revision == 2) f = I2C; else f = MODE_UNKNOWN;
+                           break;
+                           
+                  case 7 :
+                  case 8 :
+                  case 9 :
+                  case 10 :
+                  case 11 : f = SPI; break;
+
+                  case 14 :
+                  case 15 : f = SERIAL; break;
+
+                  default : f = MODE_UNKNOWN; break;
+               }
+               break;
+
+      case 5 : if (gpio == 18) f = PWM; else f = MODE_UNKNOWN;
+               break;
+
+      default : f = MODE_UNKNOWN; break;
+
    }
    lua_pushnumber(L, f);
    return 1;
@@ -301,7 +343,6 @@ int luaopen_GPIO (lua_State *L){
   
   
   int i, result;
-  int revision = -1;
 
   for (i=0; i<54; i++)
       gpio_direction[i] = -1;
@@ -331,8 +372,20 @@ int luaopen_GPIO (lua_State *L){
   lua_pushnumber(L, INPUT);
   lua_setfield(L, -2, "IN");
   
-  lua_pushnumber(L, ALT0);
-  lua_setfield(L, -2, "ALT0");
+  lua_pushnumber(L, PWM);
+  lua_setfield(L, -2, "PWM");
+
+  lua_pushnumber(L, SERIAL);
+  lua_setfield(L, -2, "SERIAL");
+
+  lua_pushnumber(L, I2C);
+  lua_setfield(L, -2, "I2C");
+
+  lua_pushnumber(L, SPI);
+  lua_setfield(L, -2, "SPI");
+
+  lua_pushnumber(L, MODE_UNKNOWN);
+  lua_setfield(L, -2, "UNKNOWN");
 
   lua_pushnumber(L, BOARD);
   lua_setfield(L, -2, "BOARD");
@@ -340,22 +393,22 @@ int luaopen_GPIO (lua_State *L){
   lua_pushnumber(L, BCM);
   lua_setfield(L, -2, "BCM");
 
-  lua_pushnumber(L, PUD_OFF);
+  lua_pushnumber(L, PUD_OFF + PY_PUD_CONST_OFFSET);
   lua_setfield(L, -2, "PUD_OFF");
 
-  lua_pushnumber(L, PUD_UP);
+  lua_pushnumber(L, PUD_UP + PY_PUD_CONST_OFFSET);
   lua_setfield(L, -2, "PUD_UP");
 
-  lua_pushnumber(L, PUD_DOWN);
+  lua_pushnumber(L, PUD_DOWN + PY_PUD_CONST_OFFSET);
   lua_setfield(L, -2, "PUD_DOWN");
 
-  lua_pushnumber(L, RISING_EDGE);
+  lua_pushnumber(L, RISING_EDGE + PY_EVENT_CONST_OFFSET);
   lua_setfield(L, -2, "RISING_EDGE");
 
-  lua_pushnumber(L, FALLING_EDGE);
+  lua_pushnumber(L, FALLING_EDGE + PY_EVENT_CONST_OFFSET);
   lua_setfield(L, -2, "FALLING_EDGE");
 
-  lua_pushnumber(L, BOTH_EDGE);
+  lua_pushnumber(L, BOTH_EDGE + PY_EVENT_CONST_OFFSET);
   lua_setfield(L, -2, "BOTH_EDGE");
 
   lua_pushstring(L, LUA_MODULE_VERSION);
