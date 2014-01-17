@@ -21,8 +21,8 @@ SOFTWARE.
 */
 
 #define LUA_MODULE_VERSION "0.5.4 (Lua)"
-
-
+#define LUA_PUD_CONST_OFFSET 20
+#define LUA_EVENT_CONST_OFFSET 30
 
 
 #include <errno.h>
@@ -100,7 +100,7 @@ static int lua_setup_channel(lua_State *L)
 {
    unsigned int gpio;
    int channel, direction;
-   int pud = PUD_OFF + PY_PUD_CONST_OFFSET;
+   int pud = PUD_OFF + LUA_PUD_CONST_OFFSET;
    int initial = -1;
    int func;
    
@@ -152,9 +152,9 @@ static int lua_setup_channel(lua_State *L)
    }
 
    if (direction == OUTPUT)
-      pud = PUD_OFF + PY_PUD_CONST_OFFSET;
+      pud = PUD_OFF + LUA_PUD_CONST_OFFSET;
 
-   pud -= PY_PUD_CONST_OFFSET;
+   pud -= LUA_PUD_CONST_OFFSET;
    if (pud != PUD_OFF && pud != PUD_DOWN && pud != PUD_UP)
    {
       return luaL_error(L,  "Invalid value for pull_up_down - should be either PUD_OFF, PUD_UP or PUD_DOWN");
@@ -257,16 +257,22 @@ static int lua_cleanup(lua_State* L)
 static int lua_gpio_function(lua_State* L)
 {
    unsigned int gpio;
+   int channel;
    int f;
    
-   gpio = luaL_checkint(L, 1);
+   channel = luaL_checkint(L, 1);
 
    // run init_module if module not set up
    if (init_module() != SETUP_OK)
+   {
       lua_pushnil(L);
-
+      return 1;
+   }
    if (get_gpio_number(channel, &gpio))
+   {
       lua_pushnil(L);
+      return 1;
+   }
  
 
    f = gpio_function(gpio);
@@ -393,22 +399,22 @@ int luaopen_GPIO (lua_State *L){
   lua_pushnumber(L, BCM);
   lua_setfield(L, -2, "BCM");
 
-  lua_pushnumber(L, PUD_OFF + PY_PUD_CONST_OFFSET);
+  lua_pushnumber(L, PUD_OFF + LUA_PUD_CONST_OFFSET);
   lua_setfield(L, -2, "PUD_OFF");
 
-  lua_pushnumber(L, PUD_UP + PY_PUD_CONST_OFFSET);
+  lua_pushnumber(L, PUD_UP + LUA_PUD_CONST_OFFSET);
   lua_setfield(L, -2, "PUD_UP");
 
-  lua_pushnumber(L, PUD_DOWN + PY_PUD_CONST_OFFSET);
+  lua_pushnumber(L, PUD_DOWN + LUA_PUD_CONST_OFFSET);
   lua_setfield(L, -2, "PUD_DOWN");
 
-  lua_pushnumber(L, RISING_EDGE + PY_EVENT_CONST_OFFSET);
+  lua_pushnumber(L, RISING_EDGE + LUA_EVENT_CONST_OFFSET);
   lua_setfield(L, -2, "RISING_EDGE");
 
-  lua_pushnumber(L, FALLING_EDGE + PY_EVENT_CONST_OFFSET);
+  lua_pushnumber(L, FALLING_EDGE + LUA_EVENT_CONST_OFFSET);
   lua_setfield(L, -2, "FALLING_EDGE");
 
-  lua_pushnumber(L, BOTH_EDGE + PY_EVENT_CONST_OFFSET);
+  lua_pushnumber(L, BOTH_EDGE + LUA_EVENT_CONST_OFFSET);
   lua_setfield(L, -2, "BOTH_EDGE");
 
   lua_pushstring(L, LUA_MODULE_VERSION);
