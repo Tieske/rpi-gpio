@@ -440,7 +440,7 @@ static int lua_add_event_detect(lua_State* L)
       return luaL_error(L, "You must setup() the GPIO channel as an input first");
 
    // is edge valid value
-   edge -= PY_EVENT_CONST_OFFSET;
+   edge -= LUA_EVENT_CONST_OFFSET;
    if (edge != RISING_EDGE && edge != FALLING_EDGE && edge != BOTH_EDGE)
       return luaL_error(L, "The edge must be set to RISING, FALLING or BOTH");
 
