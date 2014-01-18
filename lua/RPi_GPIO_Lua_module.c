@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+
 #define LUA_MODULE_VERSION "0.5.4 (Lua)"
 #define LUA_PUD_CONST_OFFSET 20
 #define LUA_EVENT_CONST_OFFSET 30
@@ -50,49 +51,51 @@ const int pin_to_gpio_rev2[27] = {-1, -1, -1, 2, -1, 3, -1, 4, 14, -1, 15, 17, 1
 
 static int gpio_warnings = 1;
 
-int lua_get_gpio_number(lua_State *L, int channel, unsigned int *gpio)
+unsigned int lua_get_gpio_number(lua_State *L, int channel)
 {
+    unsigned int gpio;
+    
     // check setmode() has been run
     if (gpio_mode != BOARD && gpio_mode != BCM)
-        return luaL_error(L, "Please set pin numbering mode using GPIO.setmode(GPIO.BOARD) or GPIO.setmode(GPIO.BCM)");
+        return (unsigned int)luaL_error(L, "Please set pin numbering mode using GPIO.setmode(GPIO.BOARD) or GPIO.setmode(GPIO.BCM)");
 
     // check channel number is in range
     if ( (gpio_mode == BCM && (channel < 0 || channel > 53))
       || (gpio_mode == BOARD && (channel < 1 || channel > 26)) )
-        return luaL_error(L, "The channel sent is invalid on a Raspberry Pi");
+        return (unsigned int)luaL_error(L, "The channel sent is invalid on a Raspberry Pi");
 
     // convert channel to gpio
     if (gpio_mode == BOARD)
     {
         if (*(*pin_to_gpio+channel) == -1)
         {
-	    return luaL_error(L, "The channel sent is invalid on a Raspberry Pi");
+            return (unsigned int)luaL_error(L, "The channel sent is invalid on a Raspberry Pi");
         } else {
-            *gpio = *(*pin_to_gpio+channel);
+            gpio = *(*pin_to_gpio+channel);
         }
     }
     else // gpio_mode == BCM
     {
-        *gpio = channel;
+        gpio = channel;
     }
 
-    return 0;
+    return gpio;
 }
-
 
 static int lua_setmode(lua_State *L)
 {
-   gpio_mode = luaL_checkint(L, 1);
-
-   if (gpio_mode != BOARD && gpio_mode != BCM)
+   int mode = luaL_checkint(L, 1);
+   
+   if (mode != BOARD && mode != BCM)
       return luaL_error(L, "An invalid mode was passed to setmode()");
-
+      
+   spio_mode = mode;
    return 0;
 }
 
 static int lua_setwarnings(lua_State *L)
 {
-   gpio_warnings = luaL_checkint(L, 1);
+   gpio_warnings = lua_toboolean(L, 1);
    return 0;
 }
   
@@ -131,18 +134,18 @@ static int lua_setup_channel(lua_State *L)
    } else {
       
       if (lua_gettop(L) <2)
-	return luaL_error(L, "An invalid number of args was passed to setup()");
+              return luaL_error(L, "An invalid number of args was passed to setup()");
       
       channel = luaL_checkint(L, 1);
       direction = luaL_checkint(L, 2);
       
       if (lua_gettop(L)>=3)
-	pud=luaL_checkint(L, 3);
+        pud=luaL_checkint(L, 3);
       if (lua_gettop(L)>=4)
-	initial=luaL_checkint(L, 4);
+        initial=luaL_checkint(L, 4);
    }
    
-   lua_get_gpio_number(L, channel, &gpio);
+   gpio = lua_get_gpio_number(L, channel);
 
    if (direction != INPUT && direction != OUTPUT)
       return luaL_error(L,  "An invalid direction was passed to setup()");
@@ -175,15 +178,10 @@ static int lua_setup_channel(lua_State *L)
 
 static int lua_output_gpio(lua_State* L)
 {
-   unsigned int gpio;
-   int channel, value;
+   int channel = luaL_checkint(L, 1);
+   int value = luaL_checkint(L, 2);
+   unsigned int gpio = lua_get_gpio_number(L, channel);
    
-      
-   channel = luaL_checkint(L, 1);
-   value = luaL_checkint(L, 2);
-
-   lua_get_gpio_number(L, channel, &gpio);
-
    if (gpio_direction[gpio] != OUTPUT)
      return luaL_error(L,  "The GPIO channel has not been set up as an OUTPUT");
 
@@ -194,11 +192,8 @@ static int lua_output_gpio(lua_State* L)
 // python function value = input(channel)
 static int lua_input_gpio(lua_State* L)
 {
-   unsigned int gpio;
-   int channel;
-   channel = luaL_checkint(L, 1);
-   
-   lua_get_gpio_number(L, channel, &gpio);
+   int channel = luaL_checkint(L, 1);
+   unsigned int gpio = lua_get_gpio_number(L, channel);
 
    // check channel is set up as an input or output
    if (gpio_direction[gpio] != INPUT && gpio_direction[gpio] != OUTPUT)
@@ -226,8 +221,8 @@ static int lua_cleanup(lua_State* L)
     {
       if (gpio_direction[i] != -1)
       {
-	  setup_gpio(i, INPUT, PUD_OFF);
-	  gpio_direction[i] = -1;
+          setup_gpio(i, INPUT, PUD_OFF);
+          gpio_direction[i] = -1;
       found = 1;
       }
     }
@@ -241,16 +236,14 @@ static int lua_cleanup(lua_State* L)
 
 static int lua_gpio_function(lua_State* L)
 {
+   int channel = luaL_checkint(L, 1);
    unsigned int gpio;
-   int channel;
    int f;
    
-   channel = luaL_checkint(L, 1);
-
    // run init_module if module not set up
    if (init_module() != SETUP_OK)
       luaL_error(L, "Failed initializing module");
-   lua_get_gpio_number(L, channel, &gpio);
+   gpio = lua_get_gpio_number(L, channel);
 
    f = gpio_function(gpio);
    switch (f)
@@ -293,25 +286,20 @@ static int lua_gpio_function(lua_State* L)
 // python method PWM.__init__(self, channel, frequency)
 static int lua_pwm_init(lua_State* L)
 {
-    int channel;
-    float frequency;
-    PWMObject *self;
+    int channel = luaL_checkint(L, 1);
+    float frequency = (float)luaL_checknumber(L, 2);
+    PWMObject *self = lua_newuserdata(L, sizeof(PWMObject));
     
-    channel = luaL_checkint(L, 1);
-    luaL_checkudata(L, 1, PWM_MT_NAME);
-    self = lua_newuserdata(L, sizeof(PWMObject));
     if (self == NULL) 
         return luaL_error(L, "Failed allocating userdata, out of memory?");
     
     // convert channel to gpio
-    lua_get_gpio_number(L, channel, &(self->gpio));
+    self->gpio = lua_get_gpio_number(L, channel);
 
     // ensure channel set as output
     if (gpio_direction[self->gpio] != OUTPUT)
         return luaL_error(L, "You must setup() the GPIO channel as an output first");
 
-    frequency = (float)luaL_checknumber(L, 2);
-    
     if (frequency <= 0.0)
         return luaL_error(L, "frequency must be greater than 0.0");
 
@@ -328,12 +316,8 @@ static int lua_pwm_init(lua_State* L)
 // python method PWM.ChangeDutyCycle(self, dutycycle)
 static int lua_pwm_ChangeDutyCycle(lua_State* L)
 {
-    float dutycycle = 0.0;
-    PWMObject *self;
-    luaL_checkudata(L, 1, PWM_MT_NAME);
-    self = lua_touserdata(L, 1);
-
-    dutycycle = (float)luaL_checknumber(L, 2);
+    PWMObject *self = luaL_checkudata(L, 1, PWM_MT_NAME);
+    float dutycycle = (float)luaL_checknumber(L, 2);
 
     if (dutycycle < 0.0 || dutycycle > 100.0)
         return luaL_error(L, "dutycycle must have a value from 0.0 to 100.0");
@@ -348,10 +332,8 @@ static int lua_pwm_ChangeDutyCycle(lua_State* L)
 // python method PWM.start(self, dutycycle)
 static int lua_pwm_start(lua_State* L)
 {
-    PWMObject *self;
-    luaL_checkudata(L, 1, PWM_MT_NAME);
-    self = lua_touserdata(L, 1);
-
+    PWMObject *self = luaL_checkudata(L, 1, PWM_MT_NAME);
+    
     lua_pwm_ChangeDutyCycle(L);
     pwm_start(self->gpio);
 
@@ -362,12 +344,8 @@ static int lua_pwm_start(lua_State* L)
 // python method PWM. ChangeFrequency(self, frequency)
 static int lua_pwm_ChangeFrequency(lua_State* L)
 {
-    float frequency = 1.0;
-    PWMObject *self;
-    luaL_checkudata(L, 1, PWM_MT_NAME);
-    self = lua_touserdata(L, 1);
-
-    frequency = (float)luaL_checknumber(L, 2);
+    PWMObject *self = luaL_checkudata(L, 1, PWM_MT_NAME);
+    float frequency = (float)luaL_checknumber(L, 2);
 
     if (frequency <= 0.0)
         return luaL_error(L, "frequency must be greater than 0.0");
@@ -382,9 +360,7 @@ static int lua_pwm_ChangeFrequency(lua_State* L)
 // python function PWM.stop(self)
 static int lua_pwm_stop(lua_State* L)
 {
-    PWMObject *self;
-    luaL_checkudata(L, 1, PWM_MT_NAME);
-    self = lua_touserdata(L, 1);
+    PWMObject *self = luaL_checkudata(L, 1, PWM_MT_NAME);
     
     pwm_stop(self->gpio);
     lua_settop(L, 1); // only return object itself
