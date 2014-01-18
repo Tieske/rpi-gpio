@@ -390,11 +390,11 @@ static const struct luaL_Reg gpio_lib[] = {
   { "setwarnings", lua_setwarnings},
   
   // interrupts and events
-  { "add_event_detect", lua_nimpl},
-  { "remove_event_detect", lua_nimpl},
-  { "event_detected", lua_nimpl},
-  { "add_event_callback", lua_nimpl},
   { "wait_for_edge", lua_nimpl},
+  { "event_detected", lua_nimpl},
+  { "add_event_detect", lua_nimpl},
+  { "add_event_callback", lua_nimpl},
+  { "remove_event_detect", lua_nimpl},
   
   // PWM
   { "PWM", lua_pwm_init},
@@ -476,13 +476,13 @@ int luaopen_GPIO (lua_State *L){
   lua_setfield(L, -2, "PUD_DOWN");
 
   lua_pushnumber(L, RISING_EDGE + LUA_EVENT_CONST_OFFSET);
-  lua_setfield(L, -2, "RISING_EDGE");
+  lua_setfield(L, -2, "RISING");
 
   lua_pushnumber(L, FALLING_EDGE + LUA_EVENT_CONST_OFFSET);
-  lua_setfield(L, -2, "FALLING_EDGE");
+  lua_setfield(L, -2, "FALLING");
 
   lua_pushnumber(L, BOTH_EDGE + LUA_EVENT_CONST_OFFSET);
-  lua_setfield(L, -2, "BOTH_EDGE");
+  lua_setfield(L, -2, "BOTH");
 
   lua_pushstring(L, LUA_MODULE_VERSION);
   lua_setfield(L, -2, "VERSION");
