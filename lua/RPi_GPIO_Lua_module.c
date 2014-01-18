@@ -291,7 +291,7 @@ static int lua_gpio_function(lua_State* L)
 }
 
 // python method PWM.__init__(self, channel, frequency)
-static int lua_pwm_init(luaState* L);
+static int lua_pwm_init(lua_State* L);
 {
     int channel;
     float frequency;
