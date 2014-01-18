@@ -374,10 +374,145 @@ static int lua_pwm_dealloc(lua_State* L)
     return 0;
 }
 
-
-static int lua_nimpl(lua_State* L)
+void add_lua_callback(lua_State* L, int gpio, unsigned int bouncetime, int cb_index)  //NOTE: params will not be checked!
 {
-  return luaL_error(L, "Not implemented for Lua");
+//TODO implement
+   luaL_error(L, "callback functions have not yet been implemented");
+}
+
+void remove_lua_callbacks(lua_State* L, int gpio)
+{
+//TODO implement, removes all callbacks for that GPIO number
+   luaL_error(L, "callback functions have not yet been implemented");
+}
+
+// python function add_event_callback(gpio, callback, bouncetime=0)
+static int lua_add_event_callback(lua_State* L)
+{
+//TODO  allow for named arguments (a table)
+   unsigned int gpio = lua_get_gpio_number(luaL_checkint(L, 1));
+   int bouncetime = 0;
+
+   if (!luaL_checktype(L, 2, LUA_TFUNCTION))
+      return luaL_error(L, "Arg #2 expected a function");
+
+   if (lua_gettop(L) > 2) 
+   {
+      bouncetime = luaL_checkint(L, 3);
+      if (bouncetime < 0 || bouncetime > 60000)
+         luaL_error(L, "Bouncetime must be a value from 0 to 60000");
+   }
+
+   // check channel is set up as an input
+   if (gpio_direction[gpio] != INPUT)
+      return luaL_error(L, "You must setup() the GPIO channel as an input first");
+
+   if (!gpio_event_added(gpio))
+      return luaL_error(L, "Add event detection using add_event_detect first before adding a callback");
+
+   add_lua_callback(L, gpio, (unsigned int)bouncetime, 2);
+   return 0;
+}
+
+// python function add_event_detect(gpio, edge, callback=None, bouncetime=0
+static int lua_add_event_detect(lua_State* L)
+{
+//TODO  allow for named arguments (a table)
+   unsigned int gpio = lua_get_gpio_number(luaL_checkint(L, 1));
+   int edge = luaL_checkint(L, 2);
+   int result;
+   int bouncetime = 0;
+
+   if (lua_gettop(L) > 2) 
+   {
+      if (!lua_isnil(L, 3))
+      {
+         if (!luaL_checktype(L, 3, LUA_TFUNCTION))
+            return luaL_error(L, "Arg #3 expected a function or nil");
+      }
+   }
+   
+   if (lua_gettop(L) > 3) 
+   {
+      bouncetime = luaL_checkint(L, 4);
+      if (bouncetime < 0 || bouncetime > 60000)
+         luaL_error(L, "Bouncetime must be a value from 0 to 60000");
+   }
+
+   // check channel is set up as an input
+   if (gpio_direction[gpio] != INPUT)
+      return luaL_error(L, "You must setup() the GPIO channel as an input first");
+
+   // is edge valid value
+   edge -= PY_EVENT_CONST_OFFSET;
+   if (edge != RISING_EDGE && edge != FALLING_EDGE && edge != BOTH_EDGE)
+      return luaL_error(L, "The edge must be set to RISING, FALLING or BOTH");
+
+   if ((result = add_edge_detect(gpio, edge)) != 0)   // starts a thread
+   {
+      if (result == 1)
+      {
+         return luaL_error(L, "Edge detection already enabled for this GPIO channel");
+      } else {
+         return luaL_error(L, "Failed to add edge detection");
+      }
+   }
+
+   if (luaL_checktype(L, 3, LUA_TFUNCTION))
+      add_lua_callback(L, gpio, (unsigned int)bouncetime, 3);
+
+   return 0;
+}
+
+// python function remove_event_detect(gpio)
+int lua_remove_event_detect(lua_State* L)
+{
+   unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
+
+   remove_lua_callbacks(L, gpio);
+   remove_edge_detect(gpio);
+   return 0;
+}
+
+// python function value = event_detected(channel)
+static int lua_event_detected(lua_State* L)
+{
+   unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
+
+   if (event_detected(gpio))
+      lua_pushboolean(L, 1);
+   else
+      lua_pushboolean(L, 0);
+   return 1;
+}
+
+// python function py_wait_for_edge(gpio, edge)
+static int lua_wait_for_edge(lua_State* L)
+{
+   unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
+   int edge = luaL_checkint(L, 2);
+   int result;
+   char error[30];
+
+   // check channel is setup as an input
+   if (gpio_direction[gpio] != INPUT)
+      return luaL_error(L, "You must setup() the GPIO channel as an input first");
+
+   // is edge a valid value?
+   edge -= LUA_EVENT_CONST_OFFSET;
+   if (edge != RISING_EDGE && edge != FALLING_EDGE && edge != BOTH_EDGE)
+      return luaL_error(L, "The edge must be set to RISING, FALLING or BOTH");
+
+   result = blocking_wait_for_edge(gpio, edge);
+
+   if (result == 0) {
+      return 0;
+   } else if (result == 2) {
+      return luaL_error(L, "Edge detection events already enabled for this GPIO channel");
+   } else {
+      sprintf(error, "Error #%d waiting for edge", result);
+      return luaL_error(L, error);
+   }
 }
 
 static const struct luaL_Reg gpio_lib[] = {
@@ -390,11 +525,11 @@ static const struct luaL_Reg gpio_lib[] = {
   { "setwarnings", lua_setwarnings},
   
   // interrupts and events
-  { "wait_for_edge", lua_nimpl},
-  { "event_detected", lua_nimpl},
-  { "add_event_detect", lua_nimpl},
-  { "add_event_callback", lua_nimpl},
-  { "remove_event_detect", lua_nimpl},
+  { "wait_for_edge", lua_wait_for_edge},
+  { "event_detected", lua_event_detected},
+  { "add_event_detect", lua_add_event_detect},
+  { "remove_event_detect", lua_remove_event_detect},
+  { "add_event_callback", lua_add_event_callback},
   
   // PWM
   { "PWM", lua_pwm_init},
