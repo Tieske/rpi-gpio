@@ -89,7 +89,7 @@ static int lua_setmode(lua_State *L)
    if (mode != BOARD && mode != BCM)
       return luaL_error(L, "An invalid mode was passed to setmode()");
       
-   spio_mode = mode;
+   gpio_mode = mode;
    return 0;
 }
 
