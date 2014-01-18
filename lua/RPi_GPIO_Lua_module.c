@@ -297,7 +297,7 @@ static int lua_pwm_init(lua_State* L)
     float frequency;
     PWMObject *self;
     
-    channel = luaL_checkint(L, 1)
+    channel = luaL_checkint(L, 1);
     luaL_checkudata(L, 1, PWM_MT_NAME);
     self = lua_newuserdata(L, sizeof(PWMObject));
     if (self == NULL) 
@@ -352,7 +352,7 @@ static int lua_pwm_start(lua_State* L)
     luaL_checkudata(L, 1, PWM_MT_NAME);
     self = lua_touserdata(L, 1);
 
-    lua_pwm_ChangeDutyCycle(lua_State* L)
+    lua_pwm_ChangeDutyCycle(L);
     pwm_start(self->gpio);
 
     lua_settop(L, 1); // only return object itself
@@ -452,7 +452,7 @@ int luaopen_GPIO (lua_State *L){
   //Metatable for PWM objects
   luaL_newmetatable(L, PWM_MT_NAME);
   lua_pushstring(L, "__gc");
-  lua_pushcfunction(L, PWM_dealloc);
+  lua_pushcfunction(L, lua_pwm_dealloc);
 
   //luaL_newlib(L, gpio_lib);
   luaL_register(L, "GPIO", gpio_lib);
