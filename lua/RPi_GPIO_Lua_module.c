@@ -390,11 +390,10 @@ void remove_lua_callbacks(lua_State* L, int gpio)
 static int lua_add_event_callback(lua_State* L)
 {
 //TODO  allow for named arguments (a table)
-   unsigned int gpio = lua_get_gpio_number(luaL_checkint(L, 1));
+   unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
    int bouncetime = 0;
 
-   if (!luaL_checktype(L, 2, LUA_TFUNCTION))
-      return luaL_error(L, "Arg #2 expected a function");
+   luaL_checktype(L, 2, LUA_TFUNCTION);
 
    if (lua_gettop(L) > 2) 
    {
@@ -418,7 +417,7 @@ static int lua_add_event_callback(lua_State* L)
 static int lua_add_event_detect(lua_State* L)
 {
 //TODO  allow for named arguments (a table)
-   unsigned int gpio = lua_get_gpio_number(luaL_checkint(L, 1));
+   unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
    int edge = luaL_checkint(L, 2);
    int result;
    int bouncetime = 0;
@@ -426,10 +425,7 @@ static int lua_add_event_detect(lua_State* L)
    if (lua_gettop(L) > 2) 
    {
       if (!lua_isnil(L, 3))
-      {
-         if (!luaL_checktype(L, 3, LUA_TFUNCTION))
-            return luaL_error(L, "Arg #3 expected a function or nil");
-      }
+         luaL_checktype(L, 3, LUA_TFUNCTION);
    }
    
    if (lua_gettop(L) > 3) 
@@ -458,7 +454,7 @@ static int lua_add_event_detect(lua_State* L)
       }
    }
 
-   if (luaL_checktype(L, 3, LUA_TFUNCTION))
+   if (!lua_isnil(L, 3))
       add_lua_callback(L, gpio, (unsigned int)bouncetime, 3);
 
    return 0;
