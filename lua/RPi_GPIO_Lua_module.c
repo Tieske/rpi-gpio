@@ -320,8 +320,8 @@ static int lua_pwm_init(lua_State* L)
     pwm_set_frequency(self->gpio, self->freq);
     
     // Attach meta table with shutdown method; __GC
-    lua_getfield(L, LUA_REGISTRYINDEX, PWM_MT_NAME)
-    lua_setmetatable(L, -2)
+    lua_getfield(L, LUA_REGISTRYINDEX, PWM_MT_NAME);
+    lua_setmetatable(L, -2);
     return 1;
 }
 
