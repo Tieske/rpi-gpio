@@ -394,7 +394,7 @@ static int lua_pwm_stop(lua_State* L)
 // deallocation method
 static int lua_pwm_dealloc(lua_State* L)
 {
-    PWM_stop(L);
+    lua_pwm_stop(L);
     return 0;
 }
 
