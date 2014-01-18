@@ -304,7 +304,7 @@ static int lua_pwm_init(lua_State* L)
         return luaL_error(L, "Failed allocating userdata, out of memory?");
     
     // convert channel to gpio
-    get_gpio_number(channel, &(self->gpio));
+    lua_get_gpio_number(channel, &(self->gpio));
 
     // ensure channel set as output
     if (gpio_direction[self->gpio] != OUTPUT)
