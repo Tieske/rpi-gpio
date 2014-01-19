@@ -634,7 +634,7 @@ int luaopen_GPIO (lua_State *L){
    lua_setfield(L, -2, "RPI_REVISION");
 
 // TODO shouldn't there by a UDATA with a __GC method to detect Lua closing and do a cleanup?
-// Does exiting Lua while PWM is running crash? it probably does....
+// Does exiting Lua while PWM or other threading is running crash? it probably does....
   
   return 1;
 }
