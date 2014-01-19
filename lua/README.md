@@ -50,6 +50,9 @@ To compile the Lua module, cd to `rpi-gpio/lua` and run `make`. A `GPIO.so` file
 
 Alternatively use LuaRocks; `sudo luarocks make` (in the `rpi-gpio/lua` directory)
 
+Or for the latest development version using LuaRocks: 
+`sudo luarocks install https://raw.github.com/Tieske/rpi-gpio/master/rpi-gpio-scm-1.rockspec`
+
 Example
 -------
 
