@@ -2,8 +2,9 @@ package = "rpi-gpio"
 version = "scm-1"
 
 local tag = "master"
+
 source = {
-    url = "https://github.com/Tieske/rpi-gpio/archive/master.zip",
+    url = "http://github.com/Tieske/rpi-gpio/archive/"..tag..".zip",
     dir = "rpi-gpio-master",
 }
 description = {
