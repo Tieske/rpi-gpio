@@ -3,20 +3,13 @@ RPi.GPIO.Lua
 
 This package provides a Lua module to control the GPIO on a Raspberry Pi.
 
-The main functionality is provided by the [RPi.GPIO Python Module of Ben Croston](http://sourceforge.net/projects/raspberry-gpio-python/)
+The main functionality is provided by the 
+[RPi.GPIO Python Module of Ben Croston](http://sourceforge.net/projects/raspberry-gpio-python/). 
+The Lua binding follows the Python module as closely as possible.
 
-The following functions have been implemented for Lua:
-```lua
-setup
-cleanup
-input
-output
-setmode
-gpio_function
-setwarnings
-````
-
-The PWM-related functions are not included.
+Not implemented; asynchroneous callbacks. So if you provide either 
+`add_event_detect()` or `add_event_callback()` with a callback function 
+you'll get a 'not implemented error'.
 
 Basic usage (more advanced example below):
 
@@ -31,27 +24,32 @@ GPIO.output(11, GPIO.LOW)
 GPIO.cleanup()
 ````
 
-There are some Lua scripts contained in the package which were tested on a Pi Rev 2 board.
-
-[Examples and documentation of the original Lua module](http://www.andre-simon.de)
-
 [Examples and documentation of the Python module](http://sourceforge.net/p/raspberry-gpio-python/wiki/)
 
 
 Installation
 ------------
 
-First install the Lua Development package if not done so already. 
-On Raspbian; `sudo apt-get install liblua5.1-0-dev`
+If you're familiar with installing packages and modules you can quickly build 
+the module by cd-ing into `rpi-gpio/lua` and run `make`. A `GPIO.so` file will 
+be created, which can be used in your Lua scripts.
 
-Clone the git repository, or download the tarball and unpack.
+Here's a quick list of commands for inexperienced users, to get you going with Lua on your Raspberry Pi (on Raspbian);
+````
+sudo apt-get update                     -- update your package cache
+sudo apt-get install lua5.1             -- the Lua 5.1 interpreter and libs
+sudo apt-get install liblua5.1-0-dev    -- development files, required by LuaRocks to build modules
+sudo apt-get install luarocks           -- package manager for Lua modules
+sudo apt-get install openssl            -- required for luasec (below)
+sudo apt-get install libssl-dev         -- development files for openssl, required for luasec (below)
+sudo luarocks install luarocks          -- LuaRocks will update itself to the latest version
+sudo luarocks install luasec            -- required for LuaRocks to support https downloads
+````
 
-To compile the Lua module, cd to `rpi-gpio/lua` and run `make`. A `GPIO.so` file will be created, which can be used in your Lua scripts.
-
-Alternatively use LuaRocks; `sudo luarocks make` (in the `rpi-gpio/lua` directory)
-
-Or for the latest development version using LuaRocks: 
-`sudo luarocks install https://raw.github.com/Tieske/rpi-gpio/master/rpi-gpio-scm-1.rockspec`
+You can install the module from the latest development code through;
+````
+sudo luarocks install https://raw.github.com/Tieske/rpi-gpio/master/rpi-gpio-scm-1.rockspec
+````
 
 Example
 -------
@@ -92,6 +90,11 @@ for k,v in pairs(pins) do
 end
 
 os.execute("sleep 1")
+
+p = GPIO.PWM(12, 0.5)
+p:start(1)
+os.execute("sleep 5")
+p:stop()
 
 GPIO.cleanup()
 ```` 
