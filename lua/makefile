@@ -8,7 +8,7 @@ GPIO_CORE_OBJECTS=c_gpio.o cpuinfo.o event_gpio.o soft_pwm.o
 ALL_OBJECTS=RPi_GPIO_Lua_module.o ${GPIO_CORE_OBJECTS}
 
 GPIO.so: ${ALL_OBJECTS} 
-	ld -shared -soname GPIO.so -o GPIO.so -lpthread ${LUA_LIBS} ${ALL_OBJECTS}
+	gcc -shared -o GPIO.so -lpthread ${LUA_LIBS} ${ALL_OBJECTS}
 
 RPi_GPIO_Lua_module.o:
 	gcc -fPIC -c  RPi_GPIO_Lua_module.c -I ${RPI_GPIO_PYTHON_SRC_DIR}
