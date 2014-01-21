@@ -5,7 +5,7 @@ local tag = "master"
 
 source = {
     url = "http://github.com/Tieske/rpi-gpio/archive/"..tag..".zip",
-    dir = "rpi-gpio-master",
+    dir = "rpi-gpio-"..tag,
 }
 description = {
    summary = "Lua module to control the GPIO on a Raspberry Pi",
