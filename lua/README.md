@@ -46,9 +46,14 @@ sudo luarocks install luarocks          -- LuaRocks will update itself to the la
 sudo luarocks install luasec            -- required for LuaRocks to support https downloads
 ````
 
-You can install the module from the latest development code through;
+Installing the module through LuaRocks;
 ````
-sudo luarocks install https://raw.github.com/Tieske/rpi-gpio/master/rpi-gpio-scm-1.rockspec
+sudo luarocks install rpi-gpio
+````
+
+If you feel like living dangerously, you can install the latest development code through;
+````
+sudo luarocks install rpi-gpio --server=http://luarocks.org/repositories/rocks-scm
 ````
 
 Example
