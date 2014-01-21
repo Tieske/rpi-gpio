@@ -32,6 +32,9 @@ SOFTWARE.
 #include <lua5.1/lua.h>
 #include <lua5.1/lauxlib.h>
 
+#include "darksidesync_api.h"
+#include "darksidesync_aux.h"
+
 #include "c_gpio.h"
 #include "event_gpio.h"
 #include "cpuinfo.h"

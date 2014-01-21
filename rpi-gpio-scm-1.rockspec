@@ -26,6 +26,7 @@ build = {
     ["GPIO"] = {
       sources = {
         "lua/RPi_GPIO_Lua_module.c",
+        "lua/darksidesync_aux.c",
         "source/c_gpio.c",
         "source/cpuinfo.c",
         "source/event_gpio.c",
@@ -36,6 +37,7 @@ build = {
       },
       incdirs = {
         "source",
+        "lua",
       },
     },
   },
