@@ -29,8 +29,8 @@ SOFTWARE.
 #include <errno.h>
 #include <string.h>
 
-#include <lua5.1/lua.h>
-#include <lua5.1/lauxlib.h>
+#include <lua.h>
+#include <lauxlib.h>
 
 #include "darksidesync_api.h"
 #include "darksidesync_aux.h"
