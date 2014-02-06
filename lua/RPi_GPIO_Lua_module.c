@@ -55,7 +55,7 @@ typedef struct
 typedef struct
 {
     unsigned int gpio;
-    int cb_ref
+    int cb_ref;
 } dss_data;
 
 struct lua_callback
@@ -233,6 +233,45 @@ static int lua_input_gpio(lua_State* L)
    }
    return 1;
 }  
+
+// DSS requests gpio to cancel
+void dss_cancel(void* utilid);
+{
+   if (lua_dss_utilid != NULL)
+   {
+      DSS_shutdown(utilid);
+      lua_dss_utilid = NULL;
+   }
+}
+
+// removes all callbacks for the given gpio number
+void remove_lua_callbacks(lua_State* L, unsigned int gpio)
+{
+   struct lua_callback *cb = lua_callbacks;
+   struct lua_callback *temp;
+   struct lua_callback *prev = NULL;
+
+   lua_getfield(L, LUA_REGISTRYINDEX, RPI_CBT_NAME);
+   // remove all lua callbacks for gpio
+   while (cb != NULL)
+   {
+      if (cb->gpio == gpio)
+      {
+         luaL_unref(L, -2, cb->cb_ref);  // release cb function from table         
+         if (prev == NULL)
+            lua_callbacks = cb->next;
+         else
+            prev->next = cb->next;
+         temp = cb;
+         cb = cb->next;
+         free(temp);
+      } else {
+         prev = cb;
+         cb = cb->next;
+      }
+   }   
+   lua_pop(L, 1);
+}
 
 static int lua_cleanup(lua_State* L)
 {
@@ -467,16 +506,6 @@ static void run_lua_callbacks(unsigned int gpio)
    }
 }
 
-// DSS requests gpio to cancel
-static void dss_cancel(void* utilid);
-{
-   if (lua_dss_utilid != NULL)
-   {
-      DSS_shutdown(utilid);
-      lua_dss_utilid = NULL;
-   }
-}
-
 void add_lua_callback(lua_State* L, unsigned int gpio, unsigned int bouncetime, int cb_index)  //NOTE: params will not be checked!
 {
    struct lua_callback *new_lua_cb;
@@ -485,7 +514,7 @@ void add_lua_callback(lua_State* L, unsigned int gpio, unsigned int bouncetime, 
    if (lua_dss_utilid == NULL)  // check if DarkSideSync is available
    {
       DSS_initialize(L, &dss_cancel);     // will not return on error
-      lua_dss_utilid = DSS_getutilid();   // get our id
+      lua_dss_utilid = DSS_getutilid(L);   // get our id
    }
    
    // start by inserting the callback function in our callback table
@@ -493,7 +522,7 @@ void add_lua_callback(lua_State* L, unsigned int gpio, unsigned int bouncetime, 
 
    // add callback to py_callbacks list
    new_lua_cb = malloc(sizeof(struct lua_callback));
-   if (new_py_cb == NULL)
+   if (new_lua_cb == NULL)
       luaL_error(L, "Cannot allocate memory for callback storage");
 
    lua_pushvalue(L, cb_index);                         // copy callback to top of stack
@@ -512,35 +541,6 @@ void add_lua_callback(lua_State* L, unsigned int gpio, unsigned int bouncetime, 
    }
    add_edge_callback(gpio, run_lua_callbacks);
    lua_pop(L, 1);   
-}
-
-// removes all callbacks for the given gpio number
-void remove_lua_callbacks(lua_State* L, unsigned int gpio)
-{
-   struct lua_callback *cb = lua_callbacks;
-   struct lua_callback *temp;
-   struct lua_callback *prev = NULL;
-
-   lua_getfield(L, LUA_REGISTRYINDEX, RPI_CBT_NAME);
-   // remove all lua callbacks for gpio
-   while (cb != NULL)
-   {
-      if (cb->gpio == gpio)
-      {
-         luaL_unref(L, -2, cb->cb_ref);  // release cb function from table         
-         if (prev == NULL)
-            py_callbacks = cb->next;
-         else
-            prev->next = cb->next;
-         temp = cb;
-         cb = cb->next;
-         free(temp);
-      } else {
-         prev = cb;
-         cb = cb->next;
-      }
-   }   
-   lua_pop(L, 1);
 }
 
 // python function add_event_callback(gpio, callback, bouncetime=0)
