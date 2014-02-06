@@ -241,7 +241,7 @@ void dss_cancel(void* utilid)
 {
    if (lua_dss_utilid != NULL)
    {
-      DSS_shutdown(utilid);
+      DSS_shutdown(NULL, utilid);
       lua_dss_utilid = NULL;
    }
 }

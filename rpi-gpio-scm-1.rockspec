@@ -1,11 +1,8 @@
 package = "rpi-gpio"
 version = "scm-1"
 
-local tag = "master"
-
 source = {
-    url = "http://github.com/Tieske/rpi-gpio/archive/"..tag..".zip",
-    dir = "rpi-gpio-"..tag,
+    url = "git://github.com/Tieske/rpi-gpio.git",
 }
 description = {
    summary = "Lua module to control the GPIO on a Raspberry Pi",
