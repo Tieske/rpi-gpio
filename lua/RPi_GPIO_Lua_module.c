@@ -24,7 +24,11 @@ SOFTWARE.
 #define LUA_MODULE_VERSION "0.5.4 (Lua)"
 #define LUA_PUD_CONST_OFFSET 20
 #define LUA_EVENT_CONST_OFFSET 30
+// Name for PWM objects metatable
 #define PWM_MT_NAME "RPI-GPIO PWM MT"
+// Name for callback table
+#define RPI_CBT_NAME "RPI-GPIO CBT"
+
 
 #include <errno.h>
 #include <string.h>
@@ -47,6 +51,26 @@ typedef struct
     float freq;
     float dutycycle;
 } PWMObject;
+
+typedef struct
+{
+    unsigned int gpio;
+    int cb_ref
+} dss_data;
+
+struct lua_callback
+{
+   unsigned int gpio;
+   int cb_ref;  // int value, key in the table named RPI_CB_NAME in registry
+   unsigned long long lastcall;
+   unsigned int bouncetime;
+   struct lua_callback *next;
+};
+
+// start of linked list with callbacks
+// TODO: static; hence lib can be used from only 1 Lua state!!!!!
+static struct lua_callback *lua_callbacks = NULL;
+static void* lua_dss_utilid = NULL;
 
 int gpio_mode = MODE_UNKNOWN;
 const int pin_to_gpio_rev1[27] = {-1, -1, -1, 0, -1, 1, -1, 4, 14, -1, 15, 17, 18, 21, -1, 22, 23, -1, 24, 10, -1, 9, 25, 11, 8, -1, 7};
@@ -215,9 +239,8 @@ static int lua_cleanup(lua_State* L)
    int i;
    int found = 0;
 
-
     // clean up any /sys/class exports
-    //TODO event_cleanup();
+    event_cleanup();
 
     // set everything back to input
     for (i=0; i<54; i++)
@@ -226,9 +249,13 @@ static int lua_cleanup(lua_State* L)
       {
           setup_gpio(i, INPUT, PUD_OFF);
           gpio_direction[i] = -1;
-      found = 1;
+          remove_lua_callbacks(L, (unsigned int)i);
+          found = 1;
       }
     }
+   
+   // stop DSS
+   dss_cancel(lua_dss_utilid);
    
    // check if any channels set up - if not warn about misuse of GPIO.cleanup()
    if (!found && gpio_warnings)
@@ -377,16 +404,143 @@ static int lua_pwm_dealloc(lua_State* L)
     return 0;
 }
 
-void add_lua_callback(lua_State* L, int gpio, unsigned int bouncetime, int cb_index)  //NOTE: params will not be checked!
+// DSS decode function
+static int dss_decode(lua_State *L, void* TheData, void* utilid)
 {
-//TODO implement
-   luaL_error(L, "callback functions have not yet been implemented");
+   int result;
+   dss_data *pData = TheData;
+   if (L == NULL)
+   {
+      //discard, we're exiting
+      result = 0;
+   }
+   else
+   {
+      // push our data to Lua
+      lua_getfield(L, LUA_REGISTRYINDEX, RPI_CBT_NAME);   // get callback table
+      lua_rawgeti(L, -1, pData->cb_ref);
+      lua_pushinteger(L, (int)(pData->gpio));
+      result = 2;  // 1 = lua CB function, 2 = channel
+   }
+   free(pData);
+   return result;
 }
 
-void remove_lua_callbacks(lua_State* L, int gpio)
+// callback function execution
+static void run_lua_callbacks(unsigned int gpio)
 {
-//TODO implement, removes all callbacks for that GPIO number
-   luaL_error(L, "callback functions have not yet been implemented");
+   struct lua_callback *cb = lua_callbacks;
+   struct timeval tv_timenow;
+   unsigned long long timenow;
+   dss_data *pData;
+
+   while (cb != NULL)
+   {
+      if (cb->gpio == gpio)
+      {
+         gettimeofday(&tv_timenow, NULL);
+         timenow = tv_timenow.tv_sec*1E6 + tv_timenow.tv_usec;
+         if (cb->bouncetime == 0 || timenow - cb->lastcall > cb->bouncetime*1000 || cb->lastcall == 0 || cb->lastcall > timenow) {
+            if (lua_dss_utilid != NULL)
+            {
+               // create a copy of the data
+               pData = malloc(sizeof(dss_data));
+               if (pData != NULL)
+               {
+                  pData->cb_ref = cb->cb_ref;
+                  pData->gpio = gpio;
+                  DSS_deliver(lua_dss_utilid, &dss_decode, NULL, pData);
+               }
+               else
+               {
+                  // TODO malloc failed, stay silent or some error?
+               }
+            }
+            else
+            {
+               // TODO we can't deliver, stay silent? or some error?
+            }
+         }
+         cb->lastcall = timenow;
+      }
+      cb = cb->next;
+   }
+}
+
+// DSS requests gpio to cancel
+static void dss_cancel(void* utilid);
+{
+   if (lua_dss_utilid != NULL)
+   {
+      DSS_shutdown(utilid);
+      lua_dss_utilid = NULL;
+   }
+}
+
+void add_lua_callback(lua_State* L, unsigned int gpio, unsigned int bouncetime, int cb_index)  //NOTE: params will not be checked!
+{
+   struct lua_callback *new_lua_cb;
+   struct lua_callback *cb = lua_callbacks;
+
+   if (lua_dss_utilid == NULL)  // check if DarkSideSync is available
+   {
+      DSS_initialize(L, &dss_cancel);     // will not return on error
+      lua_dss_utilid = DSS_getutilid();   // get our id
+   }
+   
+   // start by inserting the callback function in our callback table
+   lua_getfield(L, LUA_REGISTRYINDEX, RPI_CBT_NAME);   // get callback table
+
+   // add callback to py_callbacks list
+   new_lua_cb = malloc(sizeof(struct lua_callback));
+   if (new_py_cb == NULL)
+      luaL_error(L, "Cannot allocate memory for callback storage");
+
+   lua_pushvalue(L, cb_index);                         // copy callback to top of stack
+   new_lua_cb->cb_ref = luaL_ref(L, -2);               // store it and get its unique index
+   new_lua_cb->gpio = gpio;
+   new_lua_cb->lastcall = 0;
+   new_lua_cb->bouncetime = bouncetime;
+   new_lua_cb->next = NULL;
+   if (lua_callbacks == NULL) {
+      lua_callbacks = new_lua_cb;
+   } else {
+      // add to end of list
+      while (cb->next != NULL)
+         cb = cb->next;
+      cb->next = new_lua_cb;
+   }
+   add_edge_callback(gpio, run_lua_callbacks);
+   lua_pop(L, 1);   
+}
+
+// removes all callbacks for the given gpio number
+void remove_lua_callbacks(lua_State* L, unsigned int gpio)
+{
+   struct lua_callback *cb = lua_callbacks;
+   struct lua_callback *temp;
+   struct lua_callback *prev = NULL;
+
+   lua_getfield(L, LUA_REGISTRYINDEX, RPI_CBT_NAME);
+   // remove all lua callbacks for gpio
+   while (cb != NULL)
+   {
+      if (cb->gpio == gpio)
+      {
+         luaL_unref(L, -2, cb->cb_ref);  // release cb function from table         
+         if (prev == NULL)
+            py_callbacks = cb->next;
+         else
+            prev->next = cb->next;
+         temp = cb;
+         cb = cb->next;
+         free(temp);
+      } else {
+         prev = cb;
+         cb = cb->next;
+      }
+   }   
+   lua_pop(L, 1);
 }
 
 // python function add_event_callback(gpio, callback, bouncetime=0)
@@ -394,13 +548,13 @@ static int lua_add_event_callback(lua_State* L)
 {
 //TODO  allow for named arguments (a table)
    unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
-   int bouncetime = 0;
+   unsigned int bouncetime = 0;
 
    luaL_checktype(L, 2, LUA_TFUNCTION);
 
    if (lua_gettop(L) > 2) 
    {
-      bouncetime = luaL_checkint(L, 3);
+      bouncetime = (unsigned int)luaL_checkint(L, 3);
       if (bouncetime < 0 || bouncetime > 60000)
          luaL_error(L, "Bouncetime must be a value from 0 to 60000");
    }
@@ -423,7 +577,7 @@ static int lua_add_event_detect(lua_State* L)
    unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
    int edge = luaL_checkint(L, 2);
    int result;
-   int bouncetime = 0;
+   unsigned int bouncetime = 0;
 
    if (lua_gettop(L) > 2) 
    {
@@ -433,7 +587,7 @@ static int lua_add_event_detect(lua_State* L)
    
    if (lua_gettop(L) > 3) 
    {
-      bouncetime = luaL_checkint(L, 4);
+      bouncetime = (unsigned int)luaL_checkint(L, 4);
       if (bouncetime < 0 || bouncetime > 60000)
          luaL_error(L, "Bouncetime must be a value from 0 to 60000");
    }
@@ -458,7 +612,7 @@ static int lua_add_event_detect(lua_State* L)
    }
 
    if (!lua_isnil(L, 3))
-      add_lua_callback(L, gpio, (unsigned int)bouncetime, 3);
+      add_lua_callback(L, gpio, bouncetime, 3);
 
    return 0;
 }
@@ -636,6 +790,9 @@ int luaopen_GPIO (lua_State *L){
    lua_pushnumber(L, revision);
    lua_setfield(L, -2, "RPI_REVISION");
 
+   lua_newtable(L);
+   lua_setfield(L, LUA_REGISTRYINDEX, RPI_CBT_NAME); // create empty table for callback storage
+   
 // TODO shouldn't there by a UDATA with a __GC method to detect Lua closing and do a cleanup?
 // Does exiting Lua while PWM or other threading is running crash? it probably does....
   
