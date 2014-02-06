@@ -44,6 +44,8 @@ SOFTWARE.
 #include "cpuinfo.h"
 #include "common.h"
 #include "soft_pwm.h"
+#include "sys/time.h"
+#include "stdlib.h"
 
 typedef struct
 {
@@ -235,7 +237,7 @@ static int lua_input_gpio(lua_State* L)
 }  
 
 // DSS requests gpio to cancel
-void dss_cancel(void* utilid);
+void dss_cancel(void* utilid)
 {
    if (lua_dss_utilid != NULL)
    {
