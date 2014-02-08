@@ -229,9 +229,9 @@ static int lua_input_gpio(lua_State* L)
       return luaL_error(L, "You must setup() the GPIO channel first");
 
    if (input_gpio(gpio)) {
-      lua_pushnumber(L, HIGH);
+      lua_pushboolean(L, 1);
    } else {
-      lua_pushnumber(L, LOW);
+      lua_pushboolean(L, 0);
    }
    return 1;
 }  
@@ -723,10 +723,10 @@ int luaopen_GPIO (lua_State *L){
   //luaL_newlib(L, gpio_lib);
   luaL_register(L, "GPIO", gpio_lib);
   
-  lua_pushnumber(L, HIGH);
+  lua_pushboolean(L, 1);
   lua_setfield(L, -2, "HIGH");
 
-  lua_pushnumber(L, LOW);
+  lua_pushboolean(L, 0);
   lua_setfield(L, -2, "LOW");
 
   lua_pushnumber(L, OUTPUT);
