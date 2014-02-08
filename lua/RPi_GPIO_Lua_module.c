@@ -742,6 +742,7 @@ int luaopen_GPIO (lua_State *L){
   luaL_newmetatable(L, PWM_MT_NAME);
   lua_pushcfunction(L, lua_pwm_dealloc);
   lua_setfield(L, -2, "__gc");
+  lua_newtable(L);  // __index table
   lua_pushcfunction(L, lua_pwm_start);
   lua_setfield(L, -2, "start");
   lua_pushcfunction(L, lua_pwm_ChangeFrequency);
@@ -750,6 +751,7 @@ int luaopen_GPIO (lua_State *L){
   lua_setfield(L, -2, "ChangeDutyCycle");
   lua_pushcfunction(L, lua_pwm_stop);
   lua_setfield(L, -2, "stop");
+  lua_setfield(L, -2, "__index");
   lua_pop(L, 1);
 
   //luaL_newlib(L, gpio_lib);
