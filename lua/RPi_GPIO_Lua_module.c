@@ -136,7 +136,7 @@ static int lua_get_high_low(lua_State* L, int index)
    int value;
    if (lua_gettop(L) < index)
       return luaL_error(L, "to little arguments, missing HIGH/LOW parameter");
-   if (lua_isnumber(L, index)
+   if (lua_isnumber(L, index))
    {
       value = luaL_checkint(L, index);
       if (value != 0) value = 1;
