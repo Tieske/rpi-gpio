@@ -111,15 +111,19 @@ unsigned int lua_get_gpio_number(lua_State *L, int channel)
     return gpio;
 }
 
+// Sets the mode if given. Returns the set/current mode.
 static int lua_setmode(lua_State *L)
 {
-   int mode = luaL_checkint(L, 1);
-   
-   if (mode != BOARD && mode != BCM)
-      return luaL_error(L, "An invalid mode was passed to setmode()");
-      
-   gpio_mode = mode;
-   return 0;
+   int mode;
+   if (lua_gettop > 0)
+   {
+	   mode = luaL_checkint(L, 1);
+	   if (mode != BOARD && mode != BCM)
+	      return luaL_error(L, "An invalid mode was passed to setmode()");
+	   gpio_mode = mode;
+   }
+   lua_pushinteger(L, gpio_mode);
+   return 1;
 }
 
 static int lua_setwarnings(lua_State *L)
@@ -156,8 +160,7 @@ static int lua_setup_channel(lua_State *L)
    int initial = -1;
    int func;
 
-//TODO check below must also check at least 1 param is on the stack
-   if (lua_type(L, 1) == LUA_TTABLE){
+   if (lua_gettop(L) > 0 && lua_type(L, 1) == LUA_TTABLE){
      
      lua_pushstring(L, "channel");
      lua_gettable(L, -2);
@@ -707,7 +710,7 @@ static const struct luaL_Reg gpio_lib[] = {
   { "add_event_callback", lua_add_event_callback},
   
   // PWM
-  { "PWM", lua_pwm_init},
+  { "newPWM", lua_pwm_init},
   { "start", lua_pwm_start},
   { "ChangeFrequency", lua_pwm_ChangeFrequency},
   { "ChangeDutyCycle", lua_pwm_ChangeDutyCycle},
@@ -737,8 +740,17 @@ int luaopen_GPIO (lua_State *L){
 
   //Metatable for PWM objects
   luaL_newmetatable(L, PWM_MT_NAME);
-  lua_pushstring(L, "__gc");
   lua_pushcfunction(L, lua_pwm_dealloc);
+  lua_setfield(L, -2, "__gc");
+  lua_pushcfunction(L, lua_pwm_start);
+  lua_setfield(L, -2, "start");
+  lua_pushcfunction(L, lua_pwm_ChangeFrequency);
+  lua_setfield(L, -2, "ChangeFrequency");
+  lua_pushcfunction(L, lua_pwm_ChangeDutyCycle);
+  lua_setfield(L, -2, "ChangeDutyCycle");
+  lua_pushcfunction(L, lua_pwm_stop);
+  lua_setfield(L, -2, "stop");
+  lua_pop(L, 1);
 
   //luaL_newlib(L, gpio_lib);
   luaL_register(L, "GPIO", gpio_lib);
