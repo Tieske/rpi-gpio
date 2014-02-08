@@ -145,7 +145,7 @@ static int lua_get_high_low(lua_State* L, int index)
    {
       value = lua_toboolean(L, index);
    }
-   return value
+   return value;
 }
 
 static int lua_setup_channel(lua_State *L)
