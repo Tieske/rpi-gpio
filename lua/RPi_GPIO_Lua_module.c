@@ -128,6 +128,26 @@ static int lua_setwarnings(lua_State *L)
    return 0;
 }
   
+// check a HIGH/LOW value on the position, using Lua boolean check
+// as True, but ALSO accepts 0 as false
+// ALso checks number of parameters
+static int lua_get_high_low(lua_State* L, int index)
+{
+   int value;
+   if (lua_gettop(L) < index)
+      return luaL_error(L, "to little arguments, missing HIGH/LOW parameter");
+   if (lua_isnumber(L, index)
+   {
+      value = luaL_checkint(L, index);
+      if (value != 0) value = 1;
+   }
+   else
+   {
+      value = lua_toboolean(L, index);
+   }
+   return value
+}
+
 static int lua_setup_channel(lua_State *L)
 {
    unsigned int gpio;
@@ -135,7 +155,8 @@ static int lua_setup_channel(lua_State *L)
    int pud = PUD_OFF + LUA_PUD_CONST_OFFSET;
    int initial = -1;
    int func;
-   
+
+//TODO check below must also check at least 1 param is on the stack
    if (lua_type(L, 1) == LUA_TTABLE){
      
      lua_pushstring(L, "channel");
@@ -171,7 +192,7 @@ static int lua_setup_channel(lua_State *L)
       if (lua_gettop(L)>=3)
         pud=luaL_checkint(L, 3);
       if (lua_gettop(L)>=4)
-        initial=luaL_checkint(L, 4);
+        initial=lua_get_high_low(L,4);
    }
    
    gpio = lua_get_gpio_number(L, channel);
@@ -203,12 +224,11 @@ static int lua_setup_channel(lua_State *L)
 
    return 0;   
 }
-  
-
+ 
 static int lua_output_gpio(lua_State* L)
 {
    int channel = luaL_checkint(L, 1);
-   int value = luaL_checkint(L, 2);
+   int value = lua_get_high_low(L, 2);
    unsigned int gpio = lua_get_gpio_number(L, channel);
    
    if (gpio_direction[gpio] != OUTPUT)
