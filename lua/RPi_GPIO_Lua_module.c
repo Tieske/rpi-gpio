@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Andre Simon
+Copyright (c) 2013 Andre Simon, Thijs Schreijer
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -20,6 +20,36 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+/***
+Raspberry Pi GPIO binding for Lua.
+A Lua binding to the (Python) library by Ben Croston to use the GPIO from Lua.
+@module rpi-gpio
+@author Ben Croston
+@author Andre Simon
+@author Thijs Schreijer
+@copyright (c) 2012-2014; Ben Croston for the original Python library, Andre Simon for the initial Lua binding, Thijs Schreijer for the extensions of the Lua binding
+*/
+
+/***
+Constants in the module table
+@field RPI_REVISION Revision of the Raspberry Pi board as detected (either 1 or 2)
+@field VERSION Version of the Lua module
+@field HIGH for setting outputs and reading inputs (see `output` and `input`)
+@field LOW for setting outputs and reading inputs (see `output` and `input`)
+@field OUT Pin configuration, see `setup_channel` and `gpio_function`
+@field IN Pin configuration, see `setup_channel` and `gpio_function`
+@field PWM Pin configuration, see `gpio_function`
+@field SERIAL Pin configuration, see `gpio_function`
+@field I2C Pin configuration, see `gpio_function`
+@field SPI Pin configuration, see `gpio_function`
+@field UNKNOWN Pin and pinmode configuration, see `gpio_function` and `setmode`
+@field BOARD Pinmode configuration, see `setmode`
+@field BCM Pinmode configuration, see `setmode`
+@field RISING Event edge-type detection, see event functions
+@field FALLING Event edge-type detection, see event functions
+@field BOTH Event edge-type detection, see event functions
+@table constants
+*/
 
 #define LUA_MODULE_VERSION "0.5.4 (Lua)"
 #define LUA_PUD_CONST_OFFSET 20
@@ -111,7 +141,25 @@ unsigned int lua_get_gpio_number(lua_State *L, int channel)
     return gpio;
 }
 
-// Sets the mode if given. Returns the set/current mode.
+// returns the channel from the gpio number, taking the pin numbering mode into account
+static unsigned int chan_from_gpio(unsigned int gpio)
+{
+   int chan;
+
+   if (gpio_mode == BCM)
+      return gpio;
+   for (chan=1; chan<28; chan++)
+      if (*(*pin_to_gpio+chan) == gpio)
+         return chan;
+   return -1;
+}
+
+/***
+Sets the pin numbering scheme to be used.
+@function setmode
+@param mode (optional) either `BCM` (chip numbering) or `BOARD` (Rpi connector numbering)
+@return currently set mode, being `BCM`, `BOARD`, or `UNKNOWN`.
+*/
 static int lua_setmode(lua_State *L)
 {
    int mode;
@@ -126,8 +174,15 @@ static int lua_setmode(lua_State *L)
    return 1;
 }
 
+/***
+Turns warnings on or off.
+@function setwarnings
+@param mode if `nil` or `false` turns warnings off, or on otherwise
+*/
 static int lua_setwarnings(lua_State *L)
 {
+   if (lua_gettop(L) < 1)
+      return luaL_error(L, "missing argument");
    gpio_warnings = lua_toboolean(L, 1);
    return 0;
 }
@@ -152,6 +207,14 @@ static int lua_get_high_low(lua_State* L, int index)
    return value;
 }
 
+/***
+Sets a channel up on the GPIO interface.
+@function setup_channel
+@param channel channel/pin to be setup (see `setmode`)
+@param direction Sets the direction of the pin, either `IN` or `OUT`
+@param pull_up_down (optional, only for inputs) Should the builtin pullup/down resistor be used. Either `PUD_OFF`, `PUD_DOWN`, or `PUD_UP`
+@param initial (boolean, optional, only for outputs) Should an initial value be set? set to truthy value to set the pin out to `HIGH`, or falsy to set to `LOW`. NOTE: a numeric '0' is also considered falsy! for compatibility with the original Python code.
+*/
 static int lua_setup_channel(lua_State *L)
 {
    unsigned int gpio;
@@ -192,10 +255,12 @@ static int lua_setup_channel(lua_State *L)
       channel = luaL_checkint(L, 1);
       direction = luaL_checkint(L, 2);
       
-      if (lua_gettop(L)>=3)
+      if (lua_gettop(L)>=3 && direction == INPUT)
         pud=luaL_checkint(L, 3);
-      if (lua_gettop(L)>=4)
-        initial=lua_get_high_low(L,4);
+      if (lua_gettop(L)==3 && direction == OUTPUT)
+        initial=lua_get_high_low(L,3);  // special: OUTPUT pin, so 'initial' param can be third
+      if (lua_gettop(L)>=4 && direction == OUTPUT)
+        initial=lua_get_high_low(L,4);  // more than 3 args, so 'initial' must be in 4th position
    }
    
    gpio = lua_get_gpio_number(L, channel);
@@ -228,6 +293,12 @@ static int lua_setup_channel(lua_State *L)
    return 0;   
 }
  
+/***
+Sets the output of a pin.
+@function output
+@param channel channel/pin to be changed (see `setmode`)
+@param value (boolean) Use a truthy value to set the pin out to `HIGH`, or falsy to set to `LOW`. NOTE: a numeric '0' is also considered falsy! for compatibility with the original Python code.
+*/
 static int lua_output_gpio(lua_State* L)
 {
    int channel = luaL_checkint(L, 1);
@@ -241,7 +312,12 @@ static int lua_output_gpio(lua_State* L)
    return 0;
 }
 
-// python function value = input(channel)
+/***
+Reads the pin value. For pins configured as output, it returns the current output value.
+@function input
+@param channel channel/pin to be read (see `setmode`)
+@return Boolean `true` for a `HIGH` value, or `false` for a `LOW` value
+*/
 static int lua_input_gpio(lua_State* L)
 {
    int channel = luaL_checkint(L, 1);
@@ -298,6 +374,10 @@ void remove_lua_callbacks(lua_State* L, unsigned int gpio)
    lua_pop(L, 1);
 }
 
+/***
+Cleans up the modules' running operations. It will set all pins configured before to input.
+@function cleanup
+*/
 static int lua_cleanup(lua_State* L)
 {
    int i;
@@ -328,6 +408,12 @@ static int lua_cleanup(lua_State* L)
    return 0;
 }
 
+/***
+Gets the configuration of a pin.
+@function gpio_function
+@param channel channel/pin to be reported (see `setmode`)
+@return Pin configuration, being `IN`, `OUT`, `I2C`, `PWM`, `SERIAL`, `SPI` or `UNKNOWN`.
+*/
 static int lua_gpio_function(lua_State* L)
 {
    int channel = luaL_checkint(L, 1);
@@ -377,7 +463,28 @@ static int lua_gpio_function(lua_State* L)
    return 1;
 }
 
-// python method PWM.__init__(self, channel, frequency)
+/***
+PWM object.
+PWM has been implemented as software PWM. Hardware PWM is not available.
+@section PWM
+*/
+
+
+/***
+Creates a software PWM object.
+@function newPWM
+@param channel channel/pin to use for WPM (see `setmode`)
+@param freq Frequency for the PWM object (in Hz)
+@return PWM object.
+@usage
+local gpio = require("rpi-gpio")
+local gpio.setmode(gpio.BOARD)
+
+local Pin, Hz, Duty = 11, 100, 50  -- Pin 11, 100Hz, 50% dutycycle
+
+gpio.setup_channel(Pin, gpio.OUT, gpio.HIGH)
+local pwm = gpio.newPWM(Pin, Hz):start(Duty)
+*/
 static int lua_pwm_init(lua_State* L)
 {
     int channel = luaL_checkint(L, 1);
@@ -407,7 +514,13 @@ static int lua_pwm_init(lua_State* L)
     return 1;
 }
 
-// python method PWM.ChangeDutyCycle(self, dutycycle)
+/***
+Sets the dutycycle for a PWM object.
+@function ChangeDutyCycle
+@param self PWM object to operate on
+@param dutycycle Dutycycle to use for the object, from 0 to 100 %
+@return PWM object
+*/
 static int lua_pwm_ChangeDutyCycle(lua_State* L)
 {
     PWMObject *self = luaL_checkudata(L, 1, PWM_MT_NAME);
@@ -423,7 +536,13 @@ static int lua_pwm_ChangeDutyCycle(lua_State* L)
     return 1;
 }
 
-// python method PWM.start(self, dutycycle)
+/***
+Starts the PWM mode.
+@function start
+@param self PWM object to operate on
+@param dutycycle Dutycycle to use for the object, from 0 to 100 %
+@return PWM object
+*/
 static int lua_pwm_start(lua_State* L)
 {
     PWMObject *self = luaL_checkudata(L, 1, PWM_MT_NAME);
@@ -435,7 +554,13 @@ static int lua_pwm_start(lua_State* L)
     return 1;
 }
 
-// python method PWM. ChangeFrequency(self, frequency)
+/***
+Sets the frequency for a PWM object.
+@function ChangeFrequency
+@param self PWM object to operate on
+@param freq Frequency to use for the object, in Hz.
+@return PWM object
+*/
 static int lua_pwm_ChangeFrequency(lua_State* L)
 {
     PWMObject *self = luaL_checkudata(L, 1, PWM_MT_NAME);
@@ -451,7 +576,12 @@ static int lua_pwm_ChangeFrequency(lua_State* L)
     return 1;
 }
 
-// python function PWM.stop(self)
+/***
+Stops the PWM mode.
+@function stop
+@param self PWM object to operate on
+@return PWM object
+*/
 static int lua_pwm_stop(lua_State* L)
 {
     PWMObject *self = luaL_checkudata(L, 1, PWM_MT_NAME);
@@ -483,7 +613,7 @@ static int dss_decode(lua_State *L, void* TheData, void* utilid)
       // push our data to Lua
       lua_getfield(L, LUA_REGISTRYINDEX, RPI_CBT_NAME);   // get callback table
       lua_rawgeti(L, -1, pData->cb_ref);
-      lua_pushinteger(L, (int)(pData->gpio));
+      lua_pushinteger(L, (int)(chan_from_gpio(pData->gpio)));
       result = 2;  // 1 = lua CB function, 2 = channel
    }
    free(pData);
@@ -568,10 +698,21 @@ void add_lua_callback(lua_State* L, unsigned int gpio, unsigned int bouncetime, 
    lua_pop(L, 1);   
 }
 
-// python function add_event_callback(gpio, callback, bouncetime=0)
+/***
+Event detection.
+Using event detection, the rising or falling edges of the GPIO pins can be detected. Either blocking, non-blocking or asynchroneous.
+@section events
+*/
+
+/***
+Adds an event callback function. Using this function requires the helper library `darksidesync` (async callback support).
+@function add_event_callback
+@param channel channel/pin for which to call the callback (see `setmode`)
+@param callback Callback function to call (a single parameter, the channel number, will be passed to the callback)
+@param bouncetime (optional) minimum time between two callbacks in milliseconds (intermediate events will be ignored)
+*/
 static int lua_add_event_callback(lua_State* L)
 {
-//TODO  allow for named arguments (a table)
    unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
    unsigned int bouncetime = 0;
 
@@ -595,10 +736,16 @@ static int lua_add_event_callback(lua_State* L)
    return 0;
 }
 
-// python function add_event_detect(gpio, edge, callback=None, bouncetime=0
+/***
+Adds event detection for a pin. Using this function with a callback (which is optional) requires the helper library `darksidesync` (async callback support).
+@function add_event_detect
+@param channel channel/pin to detect events for (see `setmode`)
+@param edge What type of edge to catch events for. Either `RISING`, `FALLING` or `BOTH`.
+@param callback (optional) Callback function to call on the event (a single parameter, the channel number, will be passed to the callback). More can be added using `add_event_callback`.
+@param bouncetime (optional) minimum time between two callbacks in milliseconds (intermediate events will be ignored)
+*/
 static int lua_add_event_detect(lua_State* L)
 {
-//TODO  allow for named arguments (a table)
    unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
    int edge = luaL_checkint(L, 2);
    int result;
@@ -642,7 +789,11 @@ static int lua_add_event_detect(lua_State* L)
    return 0;
 }
 
-// python function remove_event_detect(gpio)
+/***
+Removes event detection for a pin.
+@function remove_event_detect
+@param channel channel/pin to stop detecting events for (see `setmode`)
+*/
 int lua_remove_event_detect(lua_State* L)
 {
    unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
@@ -652,7 +803,13 @@ int lua_remove_event_detect(lua_State* L)
    return 0;
 }
 
-// python function value = event_detected(channel)
+/***
+Reads events detected (non-blocking). Pins must first be configured using `add_event_detect`, events will be queued, 
+so `event_detected` will not miss events.
+@function event_detected
+@param channel channel/pin to check for events (see `setmode`)
+@return boolean, `true` if an event was detected, `false` otherwise
+*/
 static int lua_event_detected(lua_State* L)
 {
    unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));
@@ -664,7 +821,12 @@ static int lua_event_detected(lua_State* L)
    return 1;
 }
 
-// python function py_wait_for_edge(gpio, edge)
+/***
+Wait for an event (blocking).
+@function wait_for_edge
+@param channel channel/pin to check for events (see `setmode`)
+@param edge What type of edge to wait for. Either `RISING`, `FALLING` or `BOTH`.
+*/
 static int lua_wait_for_edge(lua_State* L)
 {
    unsigned int gpio = lua_get_gpio_number(L, luaL_checkint(L, 1));

@@ -74,8 +74,6 @@ GPIO.setmode(GPIO.BOARD)
 
 for k,v in pairs(pins) do
   GPIO.setup(v, GPIO.OUT)
-  -- or use table for named variables:
-  -- GPIO.setup{channel=v, direction=GPIO.OUT}
 end
 
 for k,v in pairs(pins) do 
@@ -96,8 +94,8 @@ end
 
 os.execute("sleep 1")
 
-p = GPIO.PWM(12, 0.5)
-p:start(1)
+p = GPIO.newPWM(12, 100)
+p:start(50)
 os.execute("sleep 5")
 p:stop()
 
