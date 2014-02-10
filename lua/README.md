@@ -7,9 +7,9 @@ The main functionality is provided by the
 [RPi.GPIO Python Module of Ben Croston](http://sourceforge.net/projects/raspberry-gpio-python/). 
 The Lua binding follows the Python module as closely as possible.
 
-Not implemented; asynchroneous callbacks. So if you provide either 
+Note; asynchroneous callbacks require [darksidesync](https://github.com/Tieske/DarkSideSync). So if you provide either 
 `add_event_detect()` or `add_event_callback()` with a callback function 
-you'll get a 'not implemented error'.
+you'll get a error mentioning 'darksidesync' if you did not require that module before.
 
 Basic usage (more advanced example below):
 
@@ -24,6 +24,11 @@ GPIO.output(11, GPIO.LOW)
 GPIO.cleanup()
 ````
 
+Documentation
+-------------
+
+[Reference documentation](http://tieske.github.io/rpi-gpio/)
+[Example scripts](https://github.com/Tieske/rpi-gpio/tree/master/lua/scripts)
 [Examples and documentation of the Python module](http://sourceforge.net/p/raspberry-gpio-python/wiki/)
 
 
@@ -49,6 +54,8 @@ sudo luarocks install luasec            -- required for LuaRocks to support http
 Installing the module through LuaRocks;
 ````
 sudo luarocks install rpi-gpio
+sudo luarocks install darksidesync      -- optional; only if you want to use callbacks
+sudo luarocks install copas             -- optional; handy for callbacks, see 'test6_callbacks.lua'
 ````
 
 If you feel like living dangerously, you can install the latest development code through;
