@@ -612,11 +612,11 @@ static int dss_decode(lua_State *L, void* TheData, void* utilid)
    {
       // push our data to Lua
       lua_getfield(L, LUA_REGISTRYINDEX, RPI_CBT_NAME);   // get callback table
-      lua_rawgeti(L, -1, pData->cb_ref);
+      lua_rawgeti(L, -1, pData->cb_ref);                  // fetch the callback referenced
       if (!lua_isfunction(L, -1) && gpio_warnings)
          fprintf(stderr, "Event received, but callback was not found!\n");
-
-      lua_pushinteger(L, (int)(chan_from_gpio(pData->gpio)));
+      lua_remove(L, -2);                                  // drop the callback table
+      lua_pushinteger(L, (int)(chan_from_gpio(pData->gpio)));  // add the channel nr
       result = 2;  // 1 = lua CB function, 2 = channel
    }
    free(pData);
