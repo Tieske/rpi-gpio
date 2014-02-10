@@ -27,9 +27,9 @@ GPIO.cleanup()
 Documentation
 -------------
 
-[Reference documentation](http://tieske.github.io/rpi-gpio/)
-[Example scripts](https://github.com/Tieske/rpi-gpio/tree/master/lua/scripts)
-[Examples and documentation of the Python module](http://sourceforge.net/p/raspberry-gpio-python/wiki/)
+- [Reference documentation](http://tieske.github.io/rpi-gpio/)
+- [Example scripts](https://github.com/Tieske/rpi-gpio/tree/master/lua/scripts)
+- [Examples and documentation of the Python module](http://sourceforge.net/p/raspberry-gpio-python/wiki/)
 
 
 Installation
