@@ -2,7 +2,7 @@ package = "rpi-gpio"
 version = "0.1-1"
 source = {
     url = "https://github.com/Tieske/rpi-gpio/archive/lua_version_0.1.tar.gz",
-    dir = "rpi-gpio-lua_version_1.0",
+    dir = "rpi-gpio-lua_version_0.1",
 }
 description = {
    summary = "Lua module to control the GPIO on a Raspberry Pi",
