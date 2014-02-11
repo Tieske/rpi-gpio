@@ -16,9 +16,9 @@ local pinin  = 12
 local pinout = 11
 local pinexit= 13
 
-GPIO.setup(pinin,   gpio.IN,  gpio.PUD_DOWN)
-GPIO.setup(pinout,  gpio.OUT, gpio.LOW)
-GPIO.setup(pinexit, gpio.IN,  gpio.PUD_DOWN)
+gpio.setup(pinin,   gpio.IN,  gpio.PUD_DOWN)
+gpio.setup(pinout,  gpio.OUT, gpio.LOW)
+gpio.setup(pinexit, gpio.IN,  gpio.PUD_DOWN)
 
 local status
 
