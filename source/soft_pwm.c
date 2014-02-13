@@ -222,11 +222,11 @@ int pwm_exists(unsigned int gpio)
     {
         if (p->gpio == gpio)
         {
-            return 1
+            return 1;
         } else {
             p = p->next;
         }
     }
-    return 0
+    return 0;
 }
 
