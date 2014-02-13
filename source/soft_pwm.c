@@ -212,3 +212,21 @@ void pwm_stop(unsigned int gpio)
     if ((p = find_pwm(gpio)) != NULL)
         p->running = 0;
 }
+
+// returns 1 if there is a PWM for this gpio, 0 otherwise
+int pwm_exists(unsigned int gpio)
+{
+    struct pwm *p = pwm_list;
+
+    while (p != NULL)
+    {
+        if (p->gpio == gpio)
+        {
+            return 1
+        } else {
+            p = p->next;
+        }
+    }
+    return 0
+}
+

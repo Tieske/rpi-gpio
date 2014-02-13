@@ -48,6 +48,13 @@ static int PWM_init(PWMObject *self, PyObject *args, PyObject *kwds)
         return -1;
 
     // ensure channel set as output
+    if (pwm_exists(self->gpio))
+    {
+        PyErr_SetString(PyExc_RuntimeError, "PWM object already exists for this GPIO channel");
+        return -1;
+    }
+
+    // ensure channel set as output
     if (gpio_direction[self->gpio] != OUTPUT)
     {
         PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an output first");
