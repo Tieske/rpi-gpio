@@ -1,5 +1,5 @@
 package = "rpi-gpio"
-version = "scm-1"
+version = "scm-2"
 
 source = {
     url = "git://github.com/Tieske/rpi-gpio.git",
@@ -20,6 +20,7 @@ dependencies = {
 build = {
   type = "builtin",
   modules = {
+    -- Main GPIO module
     ["GPIO"] = {
       sources = {
         "lua/RPi_GPIO_Lua_module.c",
@@ -37,5 +38,7 @@ build = {
         "lua",
       },
     },
+    -- additional Lua code files
+    ["GPIO.lcd-hd44780"] = "lua/module/lcd-hd44780.lua",
   },
 }
