@@ -6,9 +6,9 @@ local GPIO = require("GPIO")
 
 -- set the pins here to match your layout
 local boardmode = GPIO.BOARD    -- GPIO.BOARD or GPIO.BCM
-local pin_rs = 25               -- register select pin
-local pin_e  = 24               -- enable pin
-local pin_db = {23, 17, 21, 22} -- data pins 1,2,3,4
+local pin_rs = 22               -- register select pin
+local pin_e  = 18               -- enable pin
+local pin_db = {16, 11, 13, 15} -- data pins 1,2,3,4
 
 
 local hd44780 = require("GPIO.lcd-hd44780")
