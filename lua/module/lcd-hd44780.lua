@@ -191,7 +191,7 @@ end
 -- On first call it will replace itself with a new implementation based on LuaSocket
 -- or the OS. 
 function M.delayMicroseconds(microseconds)
-  local sleep = (package.loaded("socket") or {}).sleep
+  local sleep = (package.loaded.socket or {}).sleep
   if sleep then
     -- use LuaSocket sleep function
     M.delayMicroseconds = function(microseconds)
@@ -243,6 +243,8 @@ function M.initialize(pin_rs, pin_e, pin_db)
   self.rightToLeft = rightToLeft
   self.autoScroll = autoScroll
   self.noAutoScroll = noAutoScroll
+  self.pulseEnable = pulseEnable
+  self.message = message
 
   write4bits(self, 0x33) -- initialization
   write4bits(self, 0x32) -- initialization
