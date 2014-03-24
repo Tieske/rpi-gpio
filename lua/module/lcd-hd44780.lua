@@ -6,7 +6,8 @@
 --
 
 local GPIO = require("GPIO")
-local bit32 = bit32 or require("bit32")
+local bit32 = bit32 or pcall(require, "bit32")
+if not bit32 then error("The 'lcd-hd44780.lua' module requires the 'bit32' module. Please install it.") end
 local bor, band, bnot, btest = bit32.bor, bit32.band, bit32.bnot, bit32.btest
 
 local M = {}
@@ -191,7 +192,7 @@ end
 -- On first call it will replace itself with a new implementation based on LuaSocket
 -- or the OS. 
 function M.delayMicroseconds(microseconds)
-  local sleep = (package.loaded("socket") or {}).sleep
+  local sleep = (package.loaded.socket or {}).sleep
   if sleep then
     -- use LuaSocket sleep function
     M.delayMicroseconds = function(microseconds)
