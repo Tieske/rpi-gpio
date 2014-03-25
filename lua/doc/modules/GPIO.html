@@ -1,0 +1,674 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Raspberry Pi GPIO module</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>rpi-gpio</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Tables">Tables</a></li>
+<li><a href="#PWM_object">PWM object </a></li>
+<li><a href="#Event_detection">Event detection </a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="$(kind=='Topics' and '' or 'nowrap'">
+  <li><strong>GPIO</strong></li>
+  <li><a href="../modules/GPIO.lcd-hd44780.html">GPIO.lcd-hd44780</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>GPIO</code></h1>
+<p>Raspberry Pi GPIO binding for Lua.</p>
+<p>A Lua binding to the (Python) library by Ben Croston to use the GPIO from Lua.</p>
+    <h3>Info:</h3>
+    <ul>
+        <li><strong>Copyright</strong>: (c) 2012-2014; Ben Croston for the original Python library, Andre Simon for the initial Lua binding, Thijs Schreijer for the extensions of the Lua binding</li>
+        <li><strong>Author</strong>: Ben Croston,Andre Simon,Thijs Schreijer</li>
+    </ul>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#cleanup">cleanup ()</a></td>
+	<td class="summary">Cleans up the modules' running operations.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#gpio_function">gpio_function (channel)</a></td>
+	<td class="summary">Gets the configuration of a pin.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#input">input (channel)</a></td>
+	<td class="summary">Reads the pin value.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#output">output (channel, value)</a></td>
+	<td class="summary">Sets the output of a pin.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#setmode">setmode (mode)</a></td>
+	<td class="summary">Sets the pin numbering scheme to be used.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#setup_channel">setup_channel (channel, direction, pull_up_down, initial)</a></td>
+	<td class="summary">Sets a channel up on the GPIO interface.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#setwarnings">setwarnings (mode)</a></td>
+	<td class="summary">Turns warnings on or off.</td>
+	</tr>
+</table>
+<h2><a href="#Tables">Tables</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#constants">constants</a></td>
+	<td class="summary">Constants in the module table</td>
+	</tr>
+</table>
+<h2><a href="#PWM_object">PWM object </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#ChangeDutyCycle">ChangeDutyCycle (self, dutycycle)</a></td>
+	<td class="summary">Sets the dutycycle for a PWM object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#ChangeFrequency">ChangeFrequency (self, freq)</a></td>
+	<td class="summary">Sets the frequency for a PWM object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#newPWM">newPWM (channel, freq)</a></td>
+	<td class="summary">Creates a software PWM object.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#start">start (self, dutycycle)</a></td>
+	<td class="summary">Starts the PWM mode.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#stop">stop (self)</a></td>
+	<td class="summary">Stops the PWM mode.</td>
+	</tr>
+</table>
+<h2><a href="#Event_detection">Event detection </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#add_event_callback">add_event_callback (channel, callback, bouncetime)</a></td>
+	<td class="summary">Adds an event callback function.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#add_event_detect">add_event_detect (channel, edge, callback, bouncetime)</a></td>
+	<td class="summary">Adds event detection for a pin.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#event_detected">event_detected (channel)</a></td>
+	<td class="summary">Reads events detected (non-blocking).</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#remove_event_detect">remove_event_detect (channel)</a></td>
+	<td class="summary">Removes event detection for a pin.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#wait_for_edge">wait_for_edge (channel, edge)</a></td>
+	<td class="summary">Wait for an event (blocking).</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+    <dl class="function">
+    <dt>
+    <a name = "cleanup"></a>
+    <strong>cleanup ()</strong>
+    </dt>
+    <dd>
+    Cleans up the modules' running operations.  It will set all pins configured before to input.
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "gpio_function"></a>
+    <strong>gpio_function (channel)</strong>
+    </dt>
+    <dd>
+    Gets the configuration of a pin.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">channel</span>
+         channel/pin to be reported (see <a href="../modules/GPIO.html#setmode">setmode</a> )
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Pin configuration, being <code>IN</code>, <code>OUT</code>, <code>I2C</code>, <code>PWM</code>, <code>SERIAL</code>, <code>SPI</code> or <code>UNKNOWN</code>.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "input"></a>
+    <strong>input (channel)</strong>
+    </dt>
+    <dd>
+    Reads the pin value.  For pins configured as output, it returns the current output value.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">channel</span>
+         channel/pin to be read (see <a href="../modules/GPIO.html#setmode">setmode</a> )
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Boolean <code>true</code> for a <code>HIGH</code> value, or <code>false</code> for a <code>LOW</code> value
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "output"></a>
+    <strong>output (channel, value)</strong>
+    </dt>
+    <dd>
+    Sets the output of a pin.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">channel</span>
+         channel/pin to be changed (see <a href="../modules/GPIO.html#setmode">setmode</a> )
+        </li>
+        <li><span class="parameter">value</span>
+         (boolean) Use a truthy value to set the pin out to <code>HIGH</code>, or falsy to set to <code>LOW</code>. NOTE: a numeric '0' is also considered falsy! for compatibility with the original Python code.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "setmode"></a>
+    <strong>setmode (mode)</strong>
+    </dt>
+    <dd>
+    Sets the pin numbering scheme to be used.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">mode</span>
+         (optional) either <code>BCM</code> (chip numbering) or <code>BOARD</code> (Rpi connector numbering)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        currently set mode, being <code>BCM</code>, <code>BOARD</code>, or <code>UNKNOWN</code>.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "setup_channel"></a>
+    <strong>setup_channel (channel, direction, pull_up_down, initial)</strong>
+    </dt>
+    <dd>
+    Sets a channel up on the GPIO interface.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">channel</span>
+         channel/pin to be setup (see <a href="../modules/GPIO.html#setmode">setmode</a> )
+        </li>
+        <li><span class="parameter">direction</span>
+         Sets the direction of the pin, either <code>IN</code> or <code>OUT</code>
+        </li>
+        <li><span class="parameter">pull_up_down</span>
+         (optional, only for inputs) Should the builtin pullup/down resistor be used. Either <code>PUD_OFF</code>, <code>PUD_DOWN</code>, or <code>PUD_UP</code>
+        </li>
+        <li><span class="parameter">initial</span>
+         (boolean, optional, only for outputs) Should an initial value be set? set to truthy value to set the pin out to <code>HIGH</code>, or falsy to set to <code>LOW</code>. NOTE: a numeric '0' is also considered falsy! for compatibility with the original Python code.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "setwarnings"></a>
+    <strong>setwarnings (mode)</strong>
+    </dt>
+    <dd>
+    Turns warnings on or off.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">mode</span>
+         if <code>nil</code> or <code>false</code> turns warnings off, or on otherwise
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2><a name="Tables"></a>Tables</h2>
+    <dl class="function">
+    <dt>
+    <a name = "constants"></a>
+    <strong>constants</strong>
+    </dt>
+    <dd>
+    Constants in the module table
+
+
+    <h3>Fields:</h3>
+    <ul>
+        <li><span class="parameter">RPI_REVISION</span>
+         Revision of the Raspberry Pi board as detected (either 1 or 2)
+        </li>
+        <li><span class="parameter">VERSION</span>
+         Version of the Lua module
+        </li>
+        <li><span class="parameter">HIGH</span>
+         for setting outputs and reading inputs (see <a href="../modules/GPIO.html#output">output</a>  and <a href="../modules/GPIO.html#input">input</a> )
+        </li>
+        <li><span class="parameter">LOW</span>
+         for setting outputs and reading inputs (see <a href="../modules/GPIO.html#output">output</a>  and <a href="../modules/GPIO.html#input">input</a> )
+        </li>
+        <li><span class="parameter">OUT</span>
+         Pin configuration, see <a href="../modules/GPIO.html#setup_channel">setup_channel</a>  and <a href="../modules/GPIO.html#gpio_function">gpio_function</a>
+        </li>
+        <li><span class="parameter">IN</span>
+         Pin configuration, see <a href="../modules/GPIO.html#setup_channel">setup_channel</a>  and <a href="../modules/GPIO.html#gpio_function">gpio_function</a>
+        </li>
+        <li><span class="parameter">PWM</span>
+         Pin configuration, see <a href="../modules/GPIO.html#gpio_function">gpio_function</a>
+        </li>
+        <li><span class="parameter">SERIAL</span>
+         Pin configuration, see <a href="../modules/GPIO.html#gpio_function">gpio_function</a>
+        </li>
+        <li><span class="parameter">I2C</span>
+         Pin configuration, see <a href="../modules/GPIO.html#gpio_function">gpio_function</a>
+        </li>
+        <li><span class="parameter">SPI</span>
+         Pin configuration, see <a href="../modules/GPIO.html#gpio_function">gpio_function</a>
+        </li>
+        <li><span class="parameter">UNKNOWN</span>
+         Pin and pinmode configuration, see <a href="../modules/GPIO.html#gpio_function">gpio_function</a>  and <a href="../modules/GPIO.html#setmode">setmode</a>
+        </li>
+        <li><span class="parameter">BOARD</span>
+         Pinmode configuration, see <a href="../modules/GPIO.html#setmode">setmode</a>
+        </li>
+        <li><span class="parameter">BCM</span>
+         Pinmode configuration, see <a href="../modules/GPIO.html#setmode">setmode</a>
+        </li>
+        <li><span class="parameter">RISING</span>
+         Event edge-type detection, see event functions
+        </li>
+        <li><span class="parameter">FALLING</span>
+         Event edge-type detection, see event functions
+        </li>
+        <li><span class="parameter">BOTH</span>
+         Event edge-type detection, see event functions
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2><a name="PWM_object"></a>PWM object </h2>
+
+PWM has been implemented as software PWM. Hardware PWM is not available.
+    <dl class="function">
+    <dt>
+    <a name = "ChangeDutyCycle"></a>
+    <strong>ChangeDutyCycle (self, dutycycle)</strong>
+    </dt>
+    <dd>
+    Sets the dutycycle for a PWM object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         PWM object to operate on
+        </li>
+        <li><span class="parameter">dutycycle</span>
+         Dutycycle to use for the object, from 0 to 100 %
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        PWM object
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "ChangeFrequency"></a>
+    <strong>ChangeFrequency (self, freq)</strong>
+    </dt>
+    <dd>
+    Sets the frequency for a PWM object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         PWM object to operate on
+        </li>
+        <li><span class="parameter">freq</span>
+         Frequency to use for the object, in Hz.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        PWM object
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "newPWM"></a>
+    <strong>newPWM (channel, freq)</strong>
+    </dt>
+    <dd>
+    Creates a software PWM object.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">channel</span>
+         channel/pin to use for WPM (see <a href="../modules/GPIO.html#setmode">setmode</a> )
+        </li>
+        <li><span class="parameter">freq</span>
+         Frequency for the PWM object (in Hz)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        PWM object.
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example">
+<span class="keyword">local</span> gpio = <span class="global">require</span>(<span class="string">"rpi-gpio"</span>)
+<span class="keyword">local</span> gpio.setmode(gpio.BOARD)
+
+<span class="keyword">local</span> Pin, Hz, Duty = <span class="number">11</span>, <span class="number">100</span>, <span class="number">50</span>  <span class="comment">-- Pin 11, 100Hz, 50% dutycycle
+</span>
+gpio.setup_channel(Pin, gpio.OUT, gpio.HIGH)
+<span class="keyword">local</span> pwm = gpio.newPWM(Pin, Hz):start(Duty)</pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "start"></a>
+    <strong>start (self, dutycycle)</strong>
+    </dt>
+    <dd>
+    Starts the PWM mode.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         PWM object to operate on
+        </li>
+        <li><span class="parameter">dutycycle</span>
+         Dutycycle to use for the object, from 0 to 100 %
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        PWM object
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "stop"></a>
+    <strong>stop (self)</strong>
+    </dt>
+    <dd>
+    Stops the PWM mode.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         PWM object to operate on
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        PWM object
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2><a name="Event_detection"></a>Event detection </h2>
+
+Using event detection, the rising or falling edges of the GPIO pins can be detected. Either blocking, non-blocking or asynchroneous.
+    <dl class="function">
+    <dt>
+    <a name = "add_event_callback"></a>
+    <strong>add_event_callback (channel, callback, bouncetime)</strong>
+    </dt>
+    <dd>
+    Adds an event callback function.  Using this function requires the helper library <code>darksidesync</code> (async callback support).
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">channel</span>
+         channel/pin for which to call the callback (see <a href="../modules/GPIO.html#setmode">setmode</a> )
+        </li>
+        <li><span class="parameter">callback</span>
+         Callback function to call (a single parameter, the channel number, will be passed to the callback)
+        </li>
+        <li><span class="parameter">bouncetime</span>
+         (optional) minimum time between two callbacks in milliseconds (intermediate events will be ignored)
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "add_event_detect"></a>
+    <strong>add_event_detect (channel, edge, callback, bouncetime)</strong>
+    </dt>
+    <dd>
+    Adds event detection for a pin.  Using this function with a callback (which is optional) requires the helper library <code>darksidesync</code> (async callback support).
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">channel</span>
+         channel/pin to detect events for (see <a href="../modules/GPIO.html#setmode">setmode</a> )
+        </li>
+        <li><span class="parameter">edge</span>
+         What type of edge to catch events for. Either <code>RISING</code>, <code>FALLING</code> or <code>BOTH</code>.
+        </li>
+        <li><span class="parameter">callback</span>
+         (optional) Callback function to call on the event (a single parameter, the channel number, will be passed to the callback). More can be added using <a href="../modules/GPIO.html#add_event_callback">add_event_callback</a> .
+        </li>
+        <li><span class="parameter">bouncetime</span>
+         (optional) minimum time between two callbacks in milliseconds (intermediate events will be ignored)
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "event_detected"></a>
+    <strong>event_detected (channel)</strong>
+    </dt>
+    <dd>
+    Reads events detected (non-blocking).  Pins must first be configured using <a href="../modules/GPIO.html#add_event_detect">add_event_detect</a> , events will be queued,
+so <a href="../modules/GPIO.html#event_detected">event_detected</a>  will not miss events.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">channel</span>
+         channel/pin to check for events (see <a href="../modules/GPIO.html#setmode">setmode</a> )
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean, <code>true</code> if an event was detected, <code>false</code> otherwise
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "remove_event_detect"></a>
+    <strong>remove_event_detect (channel)</strong>
+    </dt>
+    <dd>
+    Removes event detection for a pin.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">channel</span>
+         channel/pin to stop detecting events for (see <a href="../modules/GPIO.html#setmode">setmode</a> )
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "wait_for_edge"></a>
+    <strong>wait_for_edge (channel, edge)</strong>
+    </dt>
+    <dd>
+    Wait for an event (blocking).
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">channel</span>
+         channel/pin to check for events (see <a href="../modules/GPIO.html#setmode">setmode</a> )
+        </li>
+        <li><span class="parameter">edge</span>
+         What type of edge to wait for. Either <code>RISING</code>, <code>FALLING</code> or <code>BOTH</code>.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.2</a></i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

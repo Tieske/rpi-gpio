@@ -1,11 +1,16 @@
+---
+-- Lua module to use a hd44780 compatible LCD display with the Raspberry Pi GPIO interface.
+-- @module GPIO.lcd-hd44780
 --
 -- based on code from lrvick, LiquidCrystal and Adafruit
--- lrvic - https://github.com/lrvick/raspi-hd44780/blob/master/hd44780.py
--- LiquidCrystal - https://github.com/arduino/Arduino/blob/master/libraries/LiquidCrystal/LiquidCrystal.cpp
--- Adafruit - https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code/blob/master/Adafruit_CharLCD/Adafruit_CharLCD.py
 --
--- NOTE: this code relies on LuaSocket for an efficient 'sleep' function. If not found
---       it will fall back on shell commands, which is extremely slow!
+-- lrvic - `https://github.com/lrvick/raspi-hd44780/blob/master/hd44780.py`
+--
+-- LiquidCrystal - `https://github.com/arduino/Arduino/blob/master/libraries/LiquidCrystal/LiquidCrystal.cpp`
+--
+-- Adafruit - `https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code/blob/master/Adafruit_CharLCD/Adafruit_CharLCD.py`
+--
+-- @copyright (c); Adafruit for the Python library, Thijs Schreijer for the Lua migration
 
 -- Load some modules
 local GPIO = require("GPIO")
@@ -82,6 +87,11 @@ local function write4bits(self, bits, char_mode)
 
 end
 
+---
+-- Sets the display size.
+-- @param self display object
+-- @param cols nr of columns
+-- @param lines nr of lines
 local function begin(self, cols, lines)
   if (lines > 1) then
     self.numlines = lines
@@ -184,9 +194,11 @@ local function message(self, text)
   end
 end
 
--- this function will sleep for a number om micro (NOT milli!) seconds.
+---
+-- This function will sleep for a number om micro (NOT milli!) seconds.
 -- On first call it will replace itself with a new implementation based on LuaSocket
--- or the OS. 
+-- or the OS. NOTE: the OS version is really slow!
+-- @param microseconds number of microseconds to sleep
 function M.delayMicroseconds(microseconds)
   local sleep = (package.loaded.socket or {}).sleep
   if sleep then
@@ -203,10 +215,11 @@ function M.delayMicroseconds(microseconds)
   return M.delayMicroseconds(microseconds) -- invoke the new implementation
 end
 
--- return a new display object
+--- Creates a new display object with its pin configuration.
 -- @param pin_rs pin number for rs (according to current pin numbering scheme)
 -- @param pin_e pin number for e (according to current pin numbering scheme)
 -- @param pin_db table/list with 4 pin numbers for data (according to current pin numbering scheme)
+-- @return New display object
 function M.initialize(pin_rs, pin_e, pin_db)
 
   local self = {
