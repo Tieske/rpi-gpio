@@ -31,6 +31,11 @@ Documentation
 - [Example scripts](https://github.com/Tieske/rpi-gpio/tree/master/lua/scripts)
 - [Examples and documentation of the Python module](http://sourceforge.net/p/raspberry-gpio-python/wiki/)
 
+Additional modules
+------------------
+Some additional modules are included for specific hardware.
+
+- `GPIO.lcd-hd44780` Module for hd44780 compatible LCDs (4bit mode), migrated to Lua from [Adafruit](https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code/blob/master/Adafruit_CharLCD/Adafruit_CharLCD.py). See [test_lcd.lua](https://github.com/Tieske/rpi-gpio/blob/master/lua/scripts/test_lcd.lua) for an example.
 
 Installation
 ------------

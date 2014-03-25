@@ -23,7 +23,7 @@ SOFTWARE.
 /***
 Raspberry Pi GPIO binding for Lua.
 A Lua binding to the (Python) library by Ben Croston to use the GPIO from Lua.
-@module rpi-gpio
+@module GPIO
 @author Ben Croston
 @author Andre Simon
 @author Thijs Schreijer
