@@ -4,13 +4,18 @@
 -- LiquidCrystal - https://github.com/arduino/Arduino/blob/master/libraries/LiquidCrystal/LiquidCrystal.cpp
 -- Adafruit - https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code/blob/master/Adafruit_CharLCD/Adafruit_CharLCD.py
 --
+-- NOTE: this code relies on LuaSocket for an efficient 'sleep' function. If not found
+--       it will fall back on shell commands, which is extremely slow!
 
+-- Load some modules
 local GPIO = require("GPIO")
-local bit32 = bit32 or pcall(require, "bit32")
-if not bit32 then error("The 'lcd-hd44780.lua' module requires the 'bit32' module. Please install it.") end
+local bit32 = bit32 or require("bit32")
+pcall(require, "socket")  -- try and load LuaSocket for the sleep function
+
+-- create some shortcuts
 local bor, band, bnot, btest = bit32.bor, bit32.band, bit32.bnot, bit32.btest
 
-local M = {}
+local M = {}     -- module table to export
 
 -- commands
 M.LCD_CLEARDISPLAY         = 0x01
@@ -63,28 +68,18 @@ local function write4bits(self, bits, char_mode)
   if char_mode then char_mode=true else char_mode=false end
 
   M.delayMicroseconds(1000) -- 1000 microsecond sleep
-
   GPIO.output(self.pin_rs, char_mode)
 
-  for _, pin in ipairs(self.pin_db) do
-    GPIO.output(pin, false)
+  for n = 1, 2 do
+    for i, pin in ipairs(self.pin_db) do
+      local bit = (2-n)*4 + (i-1)
+      local val = (btest(bits, 2^bit))
+      GPIO.output(pin, val)
+      --print("   ", pin, val, "i="..i, "n="..n)
+    end
+    self:pulseEnable()
   end
 
-  for i, pin in ipairs(self.pin_db) do
-    if btest(bits, 2^i) then GPIO.output(pin, true) end
-  end
-
-  self:pulseEnable()
-
-  for _, pin in ipairs(self.pin_db) do
-    GPIO.output(pin, false)
-  end
-
-  for i, pin in ipairs(self.pin_db) do
-    if btest(bits, 2^(i+4)) then GPIO.output(pin, true) end
-  end
-
-  self:pulseEnable()
 end
 
 local function begin(self, cols, lines)
@@ -178,13 +173,14 @@ local function pulseEnable(self)
   GPIO.output(self.pin_e, true)
   M.delayMicroseconds(1)        -- 1 microsecond pause - enable pulse must be > 450ns 
   GPIO.output(self.pin_e, false)
-  M.delayMicroseconds(1)        -- commands need > 37us to settle
+  M.delayMicroseconds(37)        -- commands need > 37us to settle
 end
 
 local function message(self, text)
-  text = text:gsub('\n', string.char(0xC0))
+  text = text:gsub("\n", string.char(0xC0))
   for i = 1, #text do
-    write4bits(self, text:byte(i), true)
+    local c = text:byte(i)
+    write4bits(self, c, (c ~= 0xC0)) -- newline should pass 'false'
   end
 end
 
