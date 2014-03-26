@@ -280,7 +280,7 @@ static int lua_setup_channel(lua_State *L)
        ((func != 0 && func != 1) ||                 // (already one of the alt functions or
        (gpio_direction[gpio] == -1 && func == 1)))  // already an output not set from this program)
    {
-      fprintf(stderr, "This channel is already in use, continuing anyway.  Use GPIO.setwarnings(False) to disable warnings.\n");
+      fprintf(stderr, "This channel is already in use, continuing anyway.  Use GPIO.setwarnings(false) to disable warnings.\n");
    }
 
    if (direction == OUTPUT && (initial == LOW || initial == HIGH))
