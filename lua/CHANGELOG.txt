@@ -1,7 +1,17 @@
 CHANGELOG of RPi.GPIO.Lua
 
-xx.xx.xxxx
- - Updated to version 0.5.4
+xx.xx.xxxx Lua version 0.3
+
+ - Updated to the Python code version 0.5.5
+
+27.03.2014 Lua version 0.2
+
+ - Added a module for LCD display
+
+11.02.2014 Lua version 0.1
+
+ - Updated to implement the full set of features (including async callbacks)
+ - Updated to the Python code version 0.5.4
 
 21.09.2013
 
