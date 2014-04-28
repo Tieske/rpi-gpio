@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+0.5.5
+-----
+- Issue 52 - 'unallocate' a channel
+- Issue 35 - use switchbounce with GPIO.event_detected()
+- Refactored events code
+- Rewrote tests to use unittest mechanism and new test board with loopbacks
+- Fixed adding events after a GPIO.cleanup()
+- Issue 64 - misleading /dev/mem permissions error
+- Issue 59 - name collision with PWM constant and class
+
 0.5.4
 -----
 - Changed release status (from alpha to full release)

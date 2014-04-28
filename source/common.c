@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Ben Croston
+Copyright (c) 2013-2014 Ben Croston
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -31,7 +31,7 @@ int setup_error = 0;
 int module_setup = 0;
 int revision = -1;
 
-int get_gpio_number(int channel, unsigned int *gpio)
+int check_gpio_priv(void)
 {
     // check module has been imported cleanly
     if (setup_error)
@@ -46,7 +46,11 @@ int get_gpio_number(int channel, unsigned int *gpio)
         PyErr_SetString(PyExc_RuntimeError, "No access to /dev/mem.  Try running as root!");
         return 2;
     }
+    return 0;
+}
 
+int get_gpio_number(int channel, unsigned int *gpio)
+{
     // check setmode() has been run
     if (gpio_mode != BOARD && gpio_mode != BCM)
     {

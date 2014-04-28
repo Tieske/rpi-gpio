@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: RPi.GPIO
-Version: 0.5.4
+Version: 0.5.5
 Summary: A module to control Raspberry Pi GPIO channels
 Home-page: http://sourceforge.net/projects/raspberry-gpio-python/
 Author: Ben Croston
@@ -23,6 +23,16 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         
         Change Log
         ==========
+        
+        0.5.5
+        -----
+        - Issue 52 - 'unallocate' a channel
+        - Issue 35 - use switchbounce with GPIO.event_detected()
+        - Refactored events code
+        - Rewrote tests to use unittest mechanism and new test board with loopbacks
+        - Fixed adding events after a GPIO.cleanup()
+        - Issue 64 - misleading /dev/mem permissions error
+        - Issue 59 - name collision with PWM constant and class
         
         0.5.4
         -----
