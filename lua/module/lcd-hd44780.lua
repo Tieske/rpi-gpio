@@ -167,12 +167,12 @@ local function rightToLeft(self)
   write4bits(self, bor(M.LCD_ENTRYMODESET, self.displaymode))
 end
 
-local function autoscroll(self)
+local function autoScroll(self)
   self.displaymode = bor(self.displaycontrol, M.LCD_ENTRYSHIFTINCREMENT)
   write4bits(self, bor(M.LCD_ENTRYMODESET, self.displaymode))
 end
 
-local function noAutoscroll(self)
+local function noAutoScroll(self)
   self.displaymode = band(self.displaymode, bnot(M.LCD_ENTRYSHIFTINCREMENT))
   write4bits(self, bor(M.LCD_ENTRYMODESET, self.displaymode))
 end
@@ -229,7 +229,7 @@ function M.initialize(pin_rs, pin_e, pin_db)
   }
   GPIO.setup(self.pin_rs, GPIO.OUT)
   GPIO.setup(self.pin_e, GPIO.OUT)
-  for i, pin in ipairs(self.pin_db) do
+  for _, pin in ipairs(self.pin_db) do
     GPIO.setup(pin, GPIO.OUT)
   end
 
