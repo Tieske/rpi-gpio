@@ -50,16 +50,35 @@ char *get_cpuinfo_revision(char *revision)
 
 int get_rpi_revision(void)
 {
-   char revision[1024] = {'\0'};
-   
-   if (get_cpuinfo_revision(revision) == NULL)
+   char raw_revision[1024] = {'\0'};
+   int len;
+   char *revision;
+
+   if (get_cpuinfo_revision(raw_revision) == NULL)
       return -1;
-      
+
+   // get last four characters (ignore preceeding 1000 for overvolt)
+   len = strlen(raw_revision);
+   if (len > 4)
+      revision = (char *)&raw_revision+len-4;
+   else
+      revision = raw_revision;
+
    if ((strcmp(revision, "0002") == 0) ||
-       (strcmp(revision, "1000002") == 0 ) ||
-       (strcmp(revision, "0003") == 0) ||
-       (strcmp(revision, "1000003") == 0 ))
+       (strcmp(revision, "0003") == 0))
       return 1;
-   else // assume rev 2 (0004 0005 0006 1000004 1000005 1000006)
-      return 2;
+   else if ((strcmp(revision, "0004") == 0) ||
+            (strcmp(revision, "0005") == 0) ||
+            (strcmp(revision, "0006") == 0) ||
+            (strcmp(revision, "0007") == 0) ||
+            (strcmp(revision, "0008") == 0) ||
+            (strcmp(revision, "0009") == 0) ||
+            (strcmp(revision, "000d") == 0) ||
+            (strcmp(revision, "000e") == 0) ||
+            (strcmp(revision, "000f") == 0))
+      return 2;  // revision 2
+   else if (strcmp(revision, "0011") == 0)
+      return 0;  // compute module
+   else   // assume B+ (0010)
+      return 3;
 }

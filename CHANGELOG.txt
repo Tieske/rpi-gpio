@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+0.5.6
+-----
+- Issue 68 - support for RPi Model B+
+- Fix gpio_function()
+
 0.5.5
 -----
 - Issue 52 - 'unallocate' a channel

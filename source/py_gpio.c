@@ -246,16 +246,28 @@ static PyObject *py_setmode(PyObject *self, PyObject *args)
       return NULL;
    }
 
+   if (revision == 0 && gpio_mode == BOARD)
+   {
+      PyErr_SetString(PyExc_RuntimeError, "BOARD numbering system not applicable on compute module");
+      return NULL;
+   }
    Py_RETURN_NONE;
 }
 
 static unsigned int chan_from_gpio(unsigned int gpio)
 {
    int chan;
+   int chans;
 
    if (gpio_mode == BCM)
       return gpio;
-   for (chan=1; chan<28; chan++)
+   if (revision == 0)   // not applicable for compute module
+      return -1;
+   else if (revision == 1 || revision == 2)
+      chans = 26;
+   else
+      chans = 40;
+   for (chan=1; chan<=chans; chan++)
       if (*(*pin_to_gpio+chan) == gpio)
          return chan;
    return -1;
@@ -541,15 +553,14 @@ static PyObject *py_gpio_function(PyObject *self, PyObject *args)
    {
       case 0 : f = INPUT;  break;
       case 1 : f = OUTPUT; break;
+
+      // ALT 0
       case 4 : switch (gpio)
                {
                   case 0 :
-                  case 1 : if (revision == 1) f = I2C; else f = MODE_UNKNOWN;
-                           break;
-
+                  case 1 :
                   case 2 :
-                  case 3 : if (revision == 2) f = I2C; else f = MODE_UNKNOWN;
-                           break;
+                  case 3 : f = I2C; break;
 
                   case 7 :
                   case 8 :
@@ -557,14 +568,35 @@ static PyObject *py_gpio_function(PyObject *self, PyObject *args)
                   case 10 :
                   case 11 : f = SPI; break;
 
+                  case 12 :
+                  case 13 : f = PWM; break;
+
                   case 14 :
                   case 15 : f = SERIAL; break;
+
+                  case 28 :
+                  case 29 : f = I2C; break;
 
                   default : f = MODE_UNKNOWN; break;
                }
                break;
 
-      case 5 : if (gpio == 18) f = PWM; else f = MODE_UNKNOWN;
+      // ALT 5
+      case 2 : if (gpio == 18 || gpio == 19) f = PWM; else f = MODE_UNKNOWN;
+               break;
+
+      // ALT 4
+      case 3 : switch (gpio)
+
+               {
+                  case 16 :
+                  case 17 :
+                  case 18 :
+                  case 19 :
+                  case 20 :
+                  case 21 : f = SPI; break;
+                  default : f = MODE_UNKNOWN; break;
+               }
                break;
 
       default : f = MODE_UNKNOWN; break;
@@ -652,8 +684,10 @@ PyMODINIT_FUNC initGPIO(void)
 #endif
    } else if (revision == 1) {
       pin_to_gpio = &pin_to_gpio_rev1;
-   } else { // assume revision 2
+   } else if (revision == 2) {
       pin_to_gpio = &pin_to_gpio_rev2;
+   } else { // assume model B+
+      pin_to_gpio = &pin_to_gpio_rev3;
    }
 
    rpi_revision = Py_BuildValue("i", revision);

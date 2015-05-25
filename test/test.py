@@ -193,8 +193,18 @@ class TestSetWarnings(unittest.TestCase):
 
 class TestVersions(unittest.TestCase):
     def test_rpi_revision(self):
-        response = raw_input('\nIs this RPi board a revision 1 or 2 ? ')
-        self.assertEqual(int(response[0]), GPIO.RPI_REVISION)
+        if GPIO.RPI_REVISION == 0:
+            revision = 'Compute Module'
+        elif GPIO.RPI_REVISION == 1:
+            revision = 'revision 1'
+        elif GPIO.RPI_REVISION == 2:
+            revision = 'revision 2'
+        elif GPIO.RPI_REVISION == 3:
+            revision = 'Model B+'
+        else:
+            revision = '**undetected**'
+        response = raw_input('\nThis board appears to be a %s - is this correct (y/n) ? '%revision).upper()
+        self.assertEqual(response, 'Y')
 
     def test_gpio_version(self):
         response = raw_input('\nRPi.GPIO version %s - is this correct (y/n) ? '%GPIO.VERSION).upper()
@@ -340,40 +350,40 @@ class TestEdgeDetection(unittest.TestCase):
         GPIO.output(LOOP_OUT, GPIO.HIGH)
         GPIO.add_event_detect(LOOP_IN, GPIO.FALLING)
         GPIO.add_event_callback(LOOP_IN, cb)
-        time.sleep(0.001)
-        for i in range(5):
+        time.sleep(0.01)
+        for i in range(2048):
             GPIO.output(LOOP_OUT, GPIO.LOW)
             time.sleep(0.001)
             GPIO.output(LOOP_OUT, GPIO.HIGH)
             time.sleep(0.001)
-        self.assertEqual(self.callback_count, 5)
         GPIO.remove_event_detect(LOOP_IN)
+        self.assertEqual(self.callback_count, 2048)
 
         # rising test
         self.callback_count = 0
         GPIO.output(LOOP_OUT, GPIO.LOW)
         GPIO.add_event_detect(LOOP_IN, GPIO.RISING, callback=cb)
         time.sleep(0.001)
-        for i in range(5):
+        for i in range(2048):
             GPIO.output(LOOP_OUT, GPIO.HIGH)
             time.sleep(0.001)
             GPIO.output(LOOP_OUT, GPIO.LOW)
             time.sleep(0.001)
-        self.assertEqual(self.callback_count, 5)
         GPIO.remove_event_detect(LOOP_IN)
+        self.assertEqual(self.callback_count, 2048)
 
         # both test
         self.callback_count = 0
         GPIO.output(LOOP_OUT, GPIO.LOW)
         GPIO.add_event_detect(LOOP_IN, GPIO.BOTH, callback=cb)
         time.sleep(0.001)
-        for i in range(5):
+        for i in range(2048):
             GPIO.output(LOOP_OUT, GPIO.HIGH)
             time.sleep(0.001)
             GPIO.output(LOOP_OUT, GPIO.LOW)
             time.sleep(0.001)
-        self.assertEqual(self.callback_count, 10)
         GPIO.remove_event_detect(LOOP_IN)
+        self.assertEqual(self.callback_count, 4096)
 
     def testEventOnOutput(self):
         with self.assertRaises(RuntimeError):
