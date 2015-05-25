@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2012-2014 Ben Croston
+Copyright (c) 2012-2015 Ben Croston
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -67,19 +67,57 @@ static int mmap_gpio_mem(void)
 static PyObject *py_cleanup(PyObject *self, PyObject *args, PyObject *kwargs)
 {
    int i;
+   int chancount = -666;
    int found = 0;
    int channel = -666;
    unsigned int gpio;
+   PyObject *chanlist = NULL;
+   PyObject *chantuple = NULL;
+   PyObject *tempobj;
    static char *kwlist[] = {"channel", NULL};
 
-   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i", kwlist, &channel))
+   void cleanup_one(void)
+   {
+      // clean up any /sys/class exports
+      event_cleanup(gpio);
+
+      // set everything back to input
+      if (gpio_direction[gpio] != -1) {
+         setup_gpio(gpio, INPUT, PUD_OFF);
+         gpio_direction[gpio] = -1;
+         found = 1;
+      }
+   }
+
+   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist, &chanlist))
       return NULL;
 
-   if (channel != -666 && get_gpio_number(channel, &gpio))
+   if (chanlist == NULL) {  // channel kwarg not set
+      // do nothing
+#if PY_MAJOR_VERSION > 2
+   } else if (PyLong_Check(chanlist)) {
+      channel = (int)PyLong_AsLong(chanlist);
+#else
+   } else if (PyInt_Check(chanlist)) {
+      channel = (int)PyInt_AsLong(chanlist);
+#endif
+      if (PyErr_Occurred())
+         return NULL;
+      chanlist = NULL;
+   } else if (PyList_Check(chanlist)) {
+      chancount = PyList_Size(chanlist);
+   } else if (PyTuple_Check(chanlist)) {
+      chantuple = chanlist;
+      chanlist = NULL;
+      chancount = PyTuple_Size(chantuple);
+   } else {
+      // raise exception
+      PyErr_SetString(PyExc_ValueError, "Channel must be an integer or list/tuple of integers");
       return NULL;
+   }
 
    if (module_setup && !setup_error) {
-      if (channel == -666) {
+      if (channel == -666 && chancount == -666) {   // channel not set - cleanup everything
          // clean up any /sys/class exports
          event_cleanup_all();
 
@@ -91,15 +129,39 @@ static PyObject *py_cleanup(PyObject *self, PyObject *args, PyObject *kwargs)
                found = 1;
             }
          }
-      } else {
-         // clean up any /sys/class exports
-         event_cleanup(gpio);
+      } else if (channel != -666) {    // channel was an int indicating single channel
+         if (get_gpio_number(channel, &gpio))
+            return NULL;
+         cleanup_one();
+      } else {  // channel was a list/tuple
+         for (i=0; i<chancount; i++) {
+            if (chanlist) {
+               if ((tempobj = PyList_GetItem(chanlist, i)) == NULL) {
+                  return NULL;
+               }
+            } else { // assume chantuple
+               if ((tempobj = PyTuple_GetItem(chantuple, i)) == NULL) {
+                  return NULL;
+               }
+            }
 
-         // set everything back to input
-         if (gpio_direction[gpio] != -1) {
-            setup_gpio(gpio, INPUT, PUD_OFF);
-            gpio_direction[gpio] = -1;
-            found = 1;
+#if PY_MAJOR_VERSION > 2
+            if (PyLong_Check(tempobj)) {
+               channel = (int)PyLong_AsLong(tempobj);
+#else
+            if (PyInt_Check(tempobj)) {
+               channel = (int)PyInt_AsLong(tempobj);
+#endif
+               if (PyErr_Occurred())
+                  return NULL;
+            } else {
+               PyErr_SetString(PyExc_ValueError, "Channel must be an integer");
+               return NULL;
+            }
+
+            if (get_gpio_number(channel, &gpio))
+               return NULL;
+            cleanup_one();
          }
       }
    }
@@ -139,6 +201,13 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
          PyErr_WarnEx(NULL, "This channel is already in use, continuing anyway.  Use GPIO.setwarnings(False) to disable warnings.", 1);
       }
 
+      // warn about pull/up down on i2c channels
+      if (revision == 0) { // compute module - do nothing
+      } else if ((revision == 1 && (gpio == 0 || gpio == 1)) ||
+                 (gpio == 2 || gpio == 3)) {
+         PyErr_WarnEx(NULL, "A physical pull up resistor is fitted on this channel!", 1);
+      }
+
       if (direction == OUTPUT && (initial == LOW || initial == HIGH)) {
          output_gpio(gpio, initial);
       }
@@ -167,8 +236,8 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
       chanlist = NULL;
    } else {
       // raise exception
-       PyErr_SetString(PyExc_ValueError, "Channel must be an integer or list/tuple of integers");
-       return NULL;
+      PyErr_SetString(PyExc_ValueError, "Channel must be an integer or list/tuple of integers");
+      return NULL;
    }
 
    // check module has been imported cleanly
@@ -830,7 +899,7 @@ static const char moduledocstring[] = "GPIO functionality of a Raspberry Pi usin
 
 PyMethodDef rpi_gpio_methods[] = {
    {"setup", (PyCFunction)py_setup_channel, METH_VARARGS | METH_KEYWORDS, "Set up a GPIO channel or list of channels with a direction and (optional) pull/up down control\nchannel        - either board pin number or BCM number depending on which mode is set.\ndirection      - INPUT or OUTPUT\n[pull_up_down] - PUD_OFF (default), PUD_UP or PUD_DOWN\n[initial]      - Initial value for an output channel"},
-   {"cleanup", (PyCFunction)py_cleanup, METH_VARARGS | METH_KEYWORDS, "Clean up by resetting all GPIO channels that have been used by this program to INPUT with no pullup/pulldown and no event detection\n[channel] - individual channel to clean up.  Default - clean every channel that has been used."},
+   {"cleanup", (PyCFunction)py_cleanup, METH_VARARGS | METH_KEYWORDS, "Clean up by resetting all GPIO channels that have been used by this program to INPUT with no pullup/pulldown and no event detection\n[channel] - individual channel or list/tuple of channels to clean up.  Default - clean every channel that has been used."},
    {"output", py_output_gpio, METH_VARARGS, "Output to a GPIO channel or list of channels\nchannel - either board pin number or BCM number depending on which mode is set.\nvalue   - 0/1 or False/True or LOW/HIGH"},
    {"input", py_input_gpio, METH_VARARGS, "Input from a GPIO channel.  Returns HIGH=1=True or LOW=0=False\nchannel - either board pin number or BCM number depending on which mode is set."},
    {"setmode", py_setmode, METH_VARARGS, "Set up numbering mode to use for channels.\nBOARD - Use Raspberry Pi board numbers\nBCM   - Use Broadcom GPIO 00..nn numbers"},

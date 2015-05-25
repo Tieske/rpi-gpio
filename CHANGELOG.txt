@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+0.5.9
+-----
+- Issue 87 - warn about pull up/down on i2c pins
+- Issue 86/75 - wait_for_edge() bugfix
+- Issue 84 - recognise RPi properly when using a custom kernel
+- Issue 90 - cleanup() on a list/tuple of channels
+
 0.5.8
 -----
 - Allow lists/tuples of channels in GPIO.setup()

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Ben Croston
+Copyright (c) 2013-2015 Ben Croston
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -79,6 +79,6 @@ void define_constants(PyObject *module)
    both_edge = Py_BuildValue("i", BOTH_EDGE + PY_EVENT_CONST_OFFSET);
    PyModule_AddObject(module, "BOTH", both_edge);
 
-   version = Py_BuildValue("s", "0.5.8");
+   version = Py_BuildValue("s", "0.5.9");
    PyModule_AddObject(module, "VERSION", version);
 }

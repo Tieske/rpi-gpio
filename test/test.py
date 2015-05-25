@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 """
-Copyright (c) 2013-2014 Ben Croston
+Copyright (c) 2013-2015 Ben Croston
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -45,6 +45,12 @@ LED_PIN_BCM = 18
 SWITCH_PIN = 18
 LOOP_IN = 16
 LOOP_OUT = 22
+
+non_interactive = False
+for i,val in enumerate(sys.argv):
+    if val == '--non_interactive':
+        non_interactive = True
+        sys.argv.pop(i)
 
 # Test starts with 'AAA' so that it is run first
 class TestAAASetup(unittest.TestCase):
@@ -113,6 +119,18 @@ class TestAAASetup(unittest.TestCase):
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.OUT)
         GPIO.cleanup()
+
+        # test warning when using pull up/down on i2c channels
+        if GPIO.RPI_REVISION == 0: # compute module
+            pass    # test not vailid
+        else:  # revision 1, 2 or A+/B+
+            with warnings.catch_warnings(record=True) as w:
+                GPIO.setup(3, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+                self.assertEqual(w[0].category, RuntimeWarning)
+            with warnings.catch_warnings(record=True) as w:
+                GPIO.setup(5, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+                self.assertEqual(w[0].category, RuntimeWarning)
+            GPIO.cleanup()
 
         # test non integer channel
         with self.assertRaises(ValueError):
@@ -189,6 +207,7 @@ class TestInputOutput(unittest.TestCase):
         GPIO.cleanup()
 
 class TestSoftPWM(unittest.TestCase):
+    @unittest.skipIf(non_interactive, 'Non interactive mode')
     def runTest(self):
         GPIO.setup(LED_PIN, GPIO.OUT)
         pwm = GPIO.PWM(LED_PIN, 50)
@@ -309,6 +328,7 @@ class TestSwitchBounce(unittest.TestCase):
     def setUp(self):
         GPIO.setup(SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+    @unittest.skipIf(non_interactive, 'Non interactive mode')
     def test_switchbounce(self):
         self.switchcount = 0
         print "\nSwitch bounce test.  Press switch at least 10 times and count..."
@@ -317,6 +337,7 @@ class TestSwitchBounce(unittest.TestCase):
             time.sleep(1)
         GPIO.remove_event_detect(SWITCH_PIN)
 
+    @unittest.skipIf(non_interactive, 'Non interactive mode')
     def test_event_detected(self):
         self.switchcount = 0
         print "\nGPIO.event_detected() switch bounce test.  Press switch at least 10 times and count..."
@@ -335,6 +356,25 @@ class TestEdgeDetection(unittest.TestCase):
         GPIO.setup(LOOP_IN, GPIO.IN)
         GPIO.setup(LOOP_OUT, GPIO.OUT)
 
+    def testWaitForEdgeInLoop(self):
+        def makelow():
+            GPIO.output(LOOP_OUT, GPIO.LOW)
+
+        count = 0
+        timestart = time.time()
+        GPIO.output(LOOP_OUT, GPIO.HIGH)
+        while True:
+            t = Timer(0.1, makelow)
+            t.start()
+            GPIO.wait_for_edge(LOOP_IN, GPIO.FALLING)
+            GPIO.output(LOOP_OUT, GPIO.HIGH)
+            count += 1
+            if time.time() - timestart > 5 or count > 150:
+                break
+        self.assertEqual(count, 49)
+        time.sleep(0.12)
+        time.sleep(0.12)
+
     def testWaitForEdgeWithCallback(self):
         def cb():
             raise Exception("Callback should not be called")
@@ -350,8 +390,9 @@ class TestEdgeDetection(unittest.TestCase):
 
         GPIO.output(LOOP_OUT, GPIO.LOW)
         GPIO.add_event_callback(LOOP_IN, callback=cb)
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError):   # conflicting edge exception
             GPIO.wait_for_edge(LOOP_IN, GPIO.RISING)
+
         GPIO.remove_event_detect(LOOP_IN)
 
     def testWaitForEventSwitchbounce(self):
@@ -560,9 +601,39 @@ class TestCleanup(unittest.TestCase):
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.IN)
 
-#def test_suite():
-#    suite = unittest.TestLoader().loadTestsFromModule()
-#    return suite
+    def test_cleantuple(self):
+        GPIO.setup(LOOP_OUT, GPIO.OUT)
+        GPIO.setup(LED_PIN, GPIO.OUT)
+        self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.OUT)
+        self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
+        GPIO.cleanup((LOOP_OUT,))
+        self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
+        self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
+        GPIO.cleanup((LED_PIN,))
+        self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
+        self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.IN)
+        GPIO.setup(LOOP_OUT, GPIO.OUT)
+        GPIO.setup(LED_PIN, GPIO.OUT)
+        GPIO.cleanup((LOOP_OUT,LED_PIN))
+        self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
+        self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.IN)
+
+    def test_cleanlist(self):
+        GPIO.setup(LOOP_OUT, GPIO.OUT)
+        GPIO.setup(LED_PIN, GPIO.OUT)
+        self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.OUT)
+        self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
+        GPIO.cleanup([LOOP_OUT])
+        self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
+        self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
+        GPIO.cleanup([LED_PIN])
+        self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
+        self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.IN)
+        GPIO.setup(LOOP_OUT, GPIO.OUT)
+        GPIO.setup(LED_PIN, GPIO.OUT)
+        GPIO.cleanup([LOOP_OUT,LED_PIN])
+        self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
+        self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.IN)
 
 if __name__ == '__main__':
     unittest.main()

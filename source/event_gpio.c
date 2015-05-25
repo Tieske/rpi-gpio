@@ -480,6 +480,7 @@ int blocking_wait_for_edge(unsigned int gpio, unsigned int edge, int bouncetime)
     struct timeval tv_timenow;
     unsigned long long timenow;
     int finished = 0;
+    int initial_edge = 1;
 
     if (callback_exists(gpio))
         return 1;
@@ -523,8 +524,8 @@ int blocking_wait_for_edge(unsigned int gpio, unsigned int edge, int bouncetime)
             epoll_ctl(epfd_blocking, EPOLL_CTL_DEL, g->value_fd, &ev);
             return 2;
         }
-        if (g->initial_wait) {    // first time triggers with current state, so ignore
-            g->initial_wait = 0;
+        if (initial_edge) {    // first time triggers with current state, so ignore
+            initial_edge = 0;
         } else {
             gettimeofday(&tv_timenow, NULL);
             timenow = tv_timenow.tv_sec*1E6 + tv_timenow.tv_usec;
@@ -535,13 +536,10 @@ int blocking_wait_for_edge(unsigned int gpio, unsigned int edge, int bouncetime)
         }
     }
 
+    // check event was valid
     if (n > 0) {
         lseek(events.data.fd, 0, SEEK_SET);
-        if (read(events.data.fd, &buf, 1) != 1) {
-            epoll_ctl(epfd_blocking, EPOLL_CTL_DEL, g->value_fd, &ev);
-            return 2;
-        }
-        if (events.data.fd != g->value_fd) {
+        if ((read(events.data.fd, &buf, 1) != 1) || (events.data.fd != g->value_fd)) {
             epoll_ctl(epfd_blocking, EPOLL_CTL_DEL, g->value_fd, &ev);
             return 2;
         }
