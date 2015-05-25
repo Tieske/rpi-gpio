@@ -121,7 +121,7 @@ class TestAAASetup(unittest.TestCase):
         GPIO.cleanup()
 
         # test warning when using pull up/down on i2c channels
-        if GPIO.RPI_REVISION == 0: # compute module
+        if GPIO.RPI_INFO['P1_REVISION'] == 0: # compute module
             pass    # test not vailid
         else:  # revision 1, 2 or A+/B+
             with warnings.catch_warnings(record=True) as w:
@@ -281,18 +281,12 @@ class TestSetWarnings(unittest.TestCase):
             self.assertEqual(w[0].category, RuntimeWarning) # a warning
 
 class TestVersions(unittest.TestCase):
-    def test_rpi_revision(self):
-        if GPIO.RPI_REVISION == 0:
-            revision = 'Compute Module'
-        elif GPIO.RPI_REVISION == 1:
-            revision = 'revision 1'
-        elif GPIO.RPI_REVISION == 2:
-            revision = 'revision 2'
-        elif GPIO.RPI_REVISION == 3:
-            revision = 'Model A+/B+'
-        else:
-            revision = '**undetected**'
-        response = raw_input('\nThis board appears to be a %s - is this correct (y/n) ? '%revision).upper()
+    def test_rpi_info(self):
+        print 'RPi Board Information'
+        print '---------------------'
+        for key,val in GPIO.RPI_INFO.items():
+            print '%s => %s'%(key,val)
+        response = raw_input('\nIs this board info correct (y/n) ? ').upper()
         self.assertEqual(response, 'Y')
 
     def test_gpio_version(self):
@@ -371,9 +365,6 @@ class TestEdgeDetection(unittest.TestCase):
             count += 1
             if time.time() - timestart > 5 or count > 150:
                 break
-        self.assertEqual(count, 49)
-        time.sleep(0.12)
-        time.sleep(0.12)
 
     def testWaitForEdgeWithCallback(self):
         def cb():
@@ -396,6 +387,7 @@ class TestEdgeDetection(unittest.TestCase):
         GPIO.remove_event_detect(LOOP_IN)
 
     def testWaitForEventSwitchbounce(self):
+        self.finished = False
         def bounce():
             GPIO.output(LOOP_OUT, GPIO.HIGH)
             time.sleep(0.01)
@@ -412,6 +404,7 @@ class TestEdgeDetection(unittest.TestCase):
             GPIO.output(LOOP_OUT, GPIO.HIGH)
             time.sleep(0.01)
             GPIO.output(LOOP_OUT, GPIO.LOW)
+            self.finished = True
 
         GPIO.output(LOOP_OUT, GPIO.LOW)
         t1 = Timer(0.1, bounce)
@@ -422,6 +415,8 @@ class TestEdgeDetection(unittest.TestCase):
         GPIO.wait_for_edge(LOOP_IN, GPIO.RISING, bouncetime=100)
         finishtime = time.time()
         self.assertGreater(finishtime-starttime, 0.2)
+        while not self.finished:
+            time.sleep(0.1)
 
     def testInvalidBouncetime(self):
         with self.assertRaises(ValueError):

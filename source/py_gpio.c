@@ -28,7 +28,8 @@ SOFTWARE.
 #include "constants.h"
 #include "common.h"
 
-static PyObject *rpi_revision;
+static PyObject *rpi_revision; // deprecated
+static PyObject *board_info;
 static int gpio_warnings = 1;
 
 struct py_callback
@@ -202,8 +203,8 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
       }
 
       // warn about pull/up down on i2c channels
-      if (revision == 0) { // compute module - do nothing
-      } else if ((revision == 1 && (gpio == 0 || gpio == 1)) ||
+      if (rpiinfo.p1_revision == 0) { // compute module - do nothing
+      } else if ((rpiinfo.p1_revision == 1 && (gpio == 0 || gpio == 1)) ||
                  (gpio == 2 || gpio == 3)) {
          PyErr_WarnEx(NULL, "A physical pull up resistor is fitted on this channel!", 1);
       }
@@ -507,7 +508,7 @@ static PyObject *py_setmode(PyObject *self, PyObject *args)
       return NULL;
    }
 
-   if (revision == 0 && gpio_mode == BOARD)
+   if (rpiinfo.p1_revision == 0 && gpio_mode == BOARD)
    {
       PyErr_SetString(PyExc_RuntimeError, "BOARD numbering system not applicable on compute module");
       return NULL;
@@ -522,9 +523,9 @@ static unsigned int chan_from_gpio(unsigned int gpio)
 
    if (gpio_mode == BCM)
       return gpio;
-   if (revision == 0)   // not applicable for compute module
+   if (rpiinfo.p1_revision == 0)   // not applicable for compute module
       return -1;
-   else if (revision == 1 || revision == 2)
+   else if (rpiinfo.p1_revision == 1 || rpiinfo.p1_revision == 2)
       chans = 26;
    else
       chans = 40;
@@ -898,7 +899,7 @@ static PyObject *py_setwarnings(PyObject *self, PyObject *args)
 static const char moduledocstring[] = "GPIO functionality of a Raspberry Pi using Python";
 
 PyMethodDef rpi_gpio_methods[] = {
-   {"setup", (PyCFunction)py_setup_channel, METH_VARARGS | METH_KEYWORDS, "Set up a GPIO channel or list of channels with a direction and (optional) pull/up down control\nchannel        - either board pin number or BCM number depending on which mode is set.\ndirection      - INPUT or OUTPUT\n[pull_up_down] - PUD_OFF (default), PUD_UP or PUD_DOWN\n[initial]      - Initial value for an output channel"},
+   {"setup", (PyCFunction)py_setup_channel, METH_VARARGS | METH_KEYWORDS, "Set up a GPIO channel or list of channels with a direction and (optional) pull/up down control\nchannel        - either board pin number or BCM number depending on which mode is set.\ndirection      - IN or OUT\n[pull_up_down] - PUD_OFF (default), PUD_UP or PUD_DOWN\n[initial]      - Initial value for an output channel"},
    {"cleanup", (PyCFunction)py_cleanup, METH_VARARGS | METH_KEYWORDS, "Clean up by resetting all GPIO channels that have been used by this program to INPUT with no pullup/pulldown and no event detection\n[channel] - individual channel or list/tuple of channels to clean up.  Default - clean every channel that has been used."},
    {"output", py_output_gpio, METH_VARARGS, "Output to a GPIO channel or list of channels\nchannel - either board pin number or BCM number depending on which mode is set.\nvalue   - 0/1 or False/True or LOW/HIGH"},
    {"input", py_input_gpio, METH_VARARGS, "Input from a GPIO channel.  Returns HIGH=1=True or LOW=0=False\nchannel - either board pin number or BCM number depending on which mode is set."},
@@ -946,8 +947,7 @@ PyMODINIT_FUNC initGPIO(void)
       gpio_direction[i] = -1;
 
    // detect board revision and set up accordingly
-   revision = get_rpi_revision();
-   if (revision == -1)
+   if (get_rpi_info(&rpiinfo))
    {
       PyErr_SetString(PyExc_RuntimeError, "This module can only be run on a Raspberry Pi!");
       setup_error = 1;
@@ -956,16 +956,26 @@ PyMODINIT_FUNC initGPIO(void)
 #else
       return;
 #endif
-   } else if (revision == 1) {
+   }
+   board_info = Py_BuildValue("{sissssssssss}",
+                              "P1_REVISION",rpiinfo.p1_revision,
+                              "REVISION",&rpiinfo.revision,
+                              "TYPE",rpiinfo.type,
+                              "MANUFACTURER",rpiinfo.manufacturer,
+                              "PROCESSOR",rpiinfo.processor,
+                              "RAM",rpiinfo.ram);
+   PyModule_AddObject(module, "RPI_INFO", board_info); 
+
+   if (rpiinfo.p1_revision == 1) {
       pin_to_gpio = &pin_to_gpio_rev1;
-   } else if (revision == 2) {
+   } else if (rpiinfo.p1_revision == 2) {
       pin_to_gpio = &pin_to_gpio_rev2;
-   } else { // assume model B+ or A+
+   } else { // assume model B+ or A+ or 2B
       pin_to_gpio = &pin_to_gpio_rev3;
    }
 
-   rpi_revision = Py_BuildValue("i", revision);
-   PyModule_AddObject(module, "RPI_REVISION", rpi_revision);
+   rpi_revision = Py_BuildValue("i", rpiinfo.p1_revision);     // deprecated
+   PyModule_AddObject(module, "RPI_REVISION", rpi_revision);   // deprecated
 
    // Add PWM class
    if (PWM_init_PWMType() == NULL)

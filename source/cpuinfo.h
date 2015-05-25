@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2012-2013 Ben Croston
+Copyright (c) 2012-2015 Ben Croston
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -20,4 +20,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-int get_rpi_revision(void);
+#ifndef CPUINFO_H
+#define CPUINFO_H
+typedef struct
+{
+   int p1_revision;
+   char *ram;
+   char *manufacturer;
+   char *processor;
+   char *type;
+   char revision[1024];
+} rpi_info;
+#endif /* CPUINFO_H */
+
+int get_rpi_info(rpi_info *info);

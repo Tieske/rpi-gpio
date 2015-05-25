@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Ben Croston
+Copyright (c) 2013-2015 Ben Croston
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -20,6 +20,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "cpuinfo.h"
+
 #define MODE_UNKNOWN -1
 #define BOARD        10
 #define BCM          11
@@ -34,9 +36,8 @@ const int pin_to_gpio_rev2[41];
 const int pin_to_gpio_rev3[41];
 const int (*pin_to_gpio)[41];
 int gpio_direction[54];
-int revision;
-
-int check_gpio_priv(void);
-int get_gpio_number(int channel, unsigned int *gpio);
+rpi_info rpiinfo;
 int setup_error;
 int module_setup;
+int check_gpio_priv(void);
+int get_gpio_number(int channel, unsigned int *gpio);

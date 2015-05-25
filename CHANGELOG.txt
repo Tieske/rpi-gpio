@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+0.5.10
+------
+- Issue 95 - support RPi 2 boards
+- Introduce RPI_INFO
+- Deprecate RPI_REVISION
+- Issue 97 - fixed docstring for setup()
+
 0.5.9
 -----
 - Issue 87 - warn about pull up/down on i2c pins
