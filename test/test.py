@@ -60,32 +60,48 @@ class TestAAASetup(unittest.TestCase):
             GPIO.setup(LED_PIN, GPIO.OUT)
         self.assertEqual(str(e.exception), 'Please set pin numbering mode using GPIO.setmode(GPIO.BOARD) or GPIO.setmode(GPIO.BCM)')
 
+        # Test trying to change mode after it has been set
+        GPIO.setmode(GPIO.BCM)
+        with self.assertRaises(ValueError) as e:
+            GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(LED_PIN_BCM, GPIO.IN)
+        GPIO.cleanup()
+
+        # Test getmode()
+        self.assertEqual(GPIO.getmode(), GPIO.UNKNOWN)
+        GPIO.setmode(GPIO.BCM)
+        self.assertEqual(GPIO.getmode(), GPIO.BCM)
+        GPIO.setup(LED_PIN_BCM, GPIO.IN)
+        GPIO.cleanup()
         GPIO.setmode(GPIO.BOARD)
+        self.assertEqual(GPIO.getmode(), GPIO.BOARD)
 
         # Test not set as OUTPUT message
+        GPIO.setmode(GPIO.BOARD)
         with self.assertRaises(RuntimeError) as e:
             GPIO.output(LED_PIN, GPIO.HIGH)
         self.assertEqual(str(e.exception), 'The GPIO channel has not been set up as an OUTPUT')
 
-        GPIO.setup(LED_PIN, GPIO.IN)
-
         # Test setup(..., pull_up_down=GPIO.HIGH) raises exception
+        GPIO.setmode(GPIO.BOARD)
         with self.assertRaises(ValueError):
             GPIO.setup(LED_PIN, GPIO.IN, pull_up_down=GPIO.HIGH)
 
         # Test not valid on a raspi exception
+        GPIO.setmode(GPIO.BOARD)
         with self.assertRaises(ValueError) as e:
             GPIO.setup(GND_PIN, GPIO.OUT)
         self.assertEqual(str(e.exception), 'The channel sent is invalid on a Raspberry Pi')
 
         # Test 'already in use' warning
-        GPIO.cleanup()
+        GPIO.setmode(GPIO.BOARD)
         with open('/sys/class/gpio/export','wb') as f:
             f.write(str(LED_PIN_BCM).encode())
         with open('/sys/class/gpio/gpio%s/direction'%LED_PIN_BCM,'wb') as f:
             f.write(b'out')
         with open('/sys/class/gpio/gpio%s/value'%LED_PIN_BCM,'wb') as f:
             f.write(b'1')
+        time.sleep(0.2)
         with warnings.catch_warnings(record=True) as w:
             GPIO.setup(LED_PIN, GPIO.OUT)    # generate 'already in use' warning
             self.assertEqual(w[0].category, RuntimeWarning)
@@ -94,20 +110,24 @@ class TestAAASetup(unittest.TestCase):
         GPIO.cleanup()
 
         # test initial value of high reads back as high
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup(LED_PIN, GPIO.OUT, initial=GPIO.HIGH)
         self.assertEqual(GPIO.input(LED_PIN), GPIO.HIGH)
         GPIO.cleanup()
 
         # test initial value of low reads back as low
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup(LED_PIN, GPIO.OUT, initial=GPIO.LOW)
         self.assertEqual(GPIO.input(LED_PIN), GPIO.LOW)
         GPIO.cleanup()
 
         # test setup of a list of channels
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup( [LED_PIN, LOOP_OUT], GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.OUT)
         GPIO.cleanup()
+        GPIO.setmode(GPIO.BOARD)
         with self.assertRaises(ValueError) as e:
             GPIO.setup( [LED_PIN, GND_PIN], GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
@@ -115,12 +135,14 @@ class TestAAASetup(unittest.TestCase):
         GPIO.cleanup()
 
         # test setup of a tuple of channels
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup( (LED_PIN, LOOP_OUT), GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.OUT)
         GPIO.cleanup()
 
         # test warning when using pull up/down on i2c channels
+        GPIO.setmode(GPIO.BOARD)
         if GPIO.RPI_INFO['P1_REVISION'] == 0: # compute module
             pass    # test not vailid
         else:  # revision 1, 2 or A+/B+
@@ -133,12 +155,16 @@ class TestAAASetup(unittest.TestCase):
             GPIO.cleanup()
 
         # test non integer channel
+        GPIO.setmode(GPIO.BOARD)
         with self.assertRaises(ValueError):
             GPIO.setup('d', GPIO.OUT)
         with self.assertRaises(ValueError):
             GPIO.setup(('d',LED_PIN), GPIO.OUT)
 
 class TestInputOutput(unittest.TestCase):
+    def setUp(self):
+        GPIO.setmode(GPIO.BOARD)
+
     def test_outputread(self):
         """Test that an output() can be input()"""
         GPIO.setup(LED_PIN, GPIO.OUT)
@@ -209,6 +235,7 @@ class TestInputOutput(unittest.TestCase):
 class TestSoftPWM(unittest.TestCase):
     @unittest.skipIf(non_interactive, 'Non interactive mode')
     def runTest(self):
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup(LED_PIN, GPIO.OUT)
         pwm = GPIO.PWM(LED_PIN, 50)
         pwm.start(100)
@@ -234,6 +261,7 @@ class TestSoftPWM(unittest.TestCase):
 class TestSetWarnings(unittest.TestCase):
     def test_alreadyinuse(self):
         """Test 'already in use' warning"""
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(False)
         with open('/sys/class/gpio/export','wb') as f:
             f.write(str(LED_PIN_BCM).encode())
@@ -248,6 +276,7 @@ class TestSetWarnings(unittest.TestCase):
             f.write(str(LED_PIN_BCM).encode())
         GPIO.cleanup()
 
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setwarnings(True)
         with open('/sys/class/gpio/export','wb') as f:
             f.write(str(LED_PIN_BCM).encode())
@@ -265,6 +294,7 @@ class TestSetWarnings(unittest.TestCase):
     def test_cleanupwarning(self):
         """Test initial GPIO.cleanup() produces warning"""
         GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup(SWITCH_PIN, GPIO.IN)
         with warnings.catch_warnings(record=True) as w:
             GPIO.cleanup()
@@ -273,6 +303,7 @@ class TestSetWarnings(unittest.TestCase):
             self.assertEqual(len(w),0) # no warnings
 
         GPIO.setwarnings(True)
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup(SWITCH_PIN, GPIO.IN)
         with warnings.catch_warnings(record=True) as w:
             GPIO.cleanup()
@@ -300,6 +331,7 @@ class TestGPIOFunction(unittest.TestCase):
         self.assertEqual(GPIO.gpio_function(LED_PIN_BCM), GPIO.IN)
         GPIO.setup(LED_PIN_BCM, GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LED_PIN_BCM), GPIO.OUT)
+        GPIO.cleanup()
 
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(LED_PIN, GPIO.IN)
@@ -320,6 +352,7 @@ class TestSwitchBounce(unittest.TestCase):
         print 'Button press',self.switchcount
 
     def setUp(self):
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup(SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     @unittest.skipIf(non_interactive, 'Non interactive mode')
@@ -347,6 +380,7 @@ class TestSwitchBounce(unittest.TestCase):
 
 class TestEdgeDetection(unittest.TestCase):
     def setUp(self):
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup(LOOP_IN, GPIO.IN)
         GPIO.setup(LOOP_OUT, GPIO.OUT)
 
@@ -575,12 +609,16 @@ class TestEdgeDetection(unittest.TestCase):
         GPIO.cleanup()
 
 class TestCleanup(unittest.TestCase):
+    def setUp(self):
+        GPIO.setmode(GPIO.BOARD)
+
     def test_cleanall(self):
         GPIO.setup(LOOP_OUT, GPIO.OUT)
         GPIO.setup(LED_PIN, GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
         GPIO.cleanup()
+        GPIO.setmode(GPIO.BOARD)
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.IN)
 
@@ -590,9 +628,11 @@ class TestCleanup(unittest.TestCase):
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
         GPIO.cleanup(LOOP_OUT)
+        GPIO.setmode(GPIO.BOARD)
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
         GPIO.cleanup(LED_PIN)
+        GPIO.setmode(GPIO.BOARD)
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.IN)
 
@@ -602,14 +642,17 @@ class TestCleanup(unittest.TestCase):
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.OUT)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
         GPIO.cleanup((LOOP_OUT,))
+        GPIO.setmode(GPIO.BOARD)
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.OUT)
         GPIO.cleanup((LED_PIN,))
+        GPIO.setmode(GPIO.BOARD)
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.IN)
         GPIO.setup(LOOP_OUT, GPIO.OUT)
         GPIO.setup(LED_PIN, GPIO.OUT)
         GPIO.cleanup((LOOP_OUT,LED_PIN))
+        GPIO.setmode(GPIO.BOARD)
         self.assertEqual(GPIO.gpio_function(LOOP_OUT), GPIO.IN)
         self.assertEqual(GPIO.gpio_function(LED_PIN), GPIO.IN)
 
