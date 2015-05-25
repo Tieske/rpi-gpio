@@ -123,13 +123,13 @@ class TestSoftPWM(unittest.TestCase):
         GPIO.setup(LED_PIN, GPIO.OUT)
         pwm = GPIO.PWM(LED_PIN, 50)
         pwm.start(100)
-        print "\nPWM tests"
-        response = raw_input('Is the LED on (y/n) ? ').upper()
+        print("\nPWM tests")
+        response = input('Is the LED on (y/n) ? ').upper()
         self.assertEqual(response,'Y')
         pwm.start(0)
-        response = raw_input('Is the LED off (y/n) ? ').upper()
+        response = input('Is the LED off (y/n) ? ').upper()
         self.assertEqual(response,'Y')
-        print "LED Brighten/fade test..."
+        print("LED Brighten/fade test...")
         for i in range(0,3):
             for x in range(0,101,5):
                 pwm.ChangeDutyCycle(x)
@@ -138,7 +138,7 @@ class TestSoftPWM(unittest.TestCase):
                 pwm.ChangeDutyCycle(x)
                 time.sleep(0.1)
         pwm.stop()
-        response = raw_input('Did it work (y/n) ? ').upper()
+        response = input('Did it work (y/n) ? ').upper()
         self.assertEqual(response,'Y')
         GPIO.cleanup()
 
@@ -203,11 +203,11 @@ class TestVersions(unittest.TestCase):
             revision = 'Model B+'
         else:
             revision = '**undetected**'
-        response = raw_input('\nThis board appears to be a %s - is this correct (y/n) ? '%revision).upper()
+        response = input('\nThis board appears to be a %s - is this correct (y/n) ? '%revision).upper()
         self.assertEqual(response, 'Y')
 
     def test_gpio_version(self):
-        response = raw_input('\nRPi.GPIO version %s - is this correct (y/n) ? '%GPIO.VERSION).upper()
+        response = input('\nRPi.GPIO version %s - is this correct (y/n) ? '%GPIO.VERSION).upper()
         self.assertEqual(response, 'Y')
 
 class TestGPIOFunction(unittest.TestCase):
@@ -234,14 +234,14 @@ class TestSwitchBounce(unittest.TestCase):
 
     def cb(self,chan):
         self.switchcount += 1
-        print 'Button press',self.switchcount
+        print('Button press',self.switchcount)
 
     def setUp(self):
         GPIO.setup(SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def test_switchbounce(self):
         self.switchcount = 0
-        print "\nSwitch bounce test.  Press switch at least 10 times and count..."
+        print("\nSwitch bounce test.  Press switch at least 10 times and count...")
         GPIO.add_event_detect(SWITCH_PIN, GPIO.FALLING, callback=self.cb, bouncetime=200)
         while self.switchcount < 10:
             time.sleep(1)
@@ -249,12 +249,12 @@ class TestSwitchBounce(unittest.TestCase):
 
     def test_event_detected(self):
         self.switchcount = 0
-        print "\nGPIO.event_detected() switch bounce test.  Press switch at least 10 times and count..."
+        print("\nGPIO.event_detected() switch bounce test.  Press switch at least 10 times and count...")
         GPIO.add_event_detect(SWITCH_PIN, GPIO.FALLING, bouncetime=200)
         while self.switchcount < 10:
             if GPIO.event_detected(SWITCH_PIN):
                 self.switchcount += 1
-                print 'Button press',self.switchcount
+                print('Button press',self.switchcount)
         GPIO.remove_event_detect(SWITCH_PIN)
 
     def tearDown(self):

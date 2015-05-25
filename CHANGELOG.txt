@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+0.5.7
+-----
+- Issue 67 - speed up repeated calls to GPIO.wait_for_event()
+- Added bouncetime keyword to GPIO.wait_for_event()
+- Added extra edge/interrupt unit tests
+- GPIO.wait_for_event() can now be mixed with GPIO.add_event_detect()
+- Improved cleanups of events
+- Issue 69 resolved
+
 0.5.6
 -----
 - Issue 68 - support for RPi Model B+

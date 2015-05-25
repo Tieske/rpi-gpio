@@ -37,8 +37,11 @@ struct gpios
     unsigned int gpio;
     int value_fd;
     int exported;
-    int initial;
-    unsigned int bouncetime;
+    int edge;
+    int initial_thread;
+    int initial_wait;
+    int thread_added;
+    int bouncetime;
     unsigned long long lastcall;
     struct gpios *next;
 };
@@ -56,7 +59,8 @@ struct callback *callbacks = NULL;
 pthread_t threads;
 int event_occurred[54] = { 0 };
 int thread_running = 0;
-int epfd = -1;
+int epfd_thread = -1;
+int epfd_blocking = -1;
 
 /************* /sys/class/gpio functions ************/
 int gpio_export(unsigned int gpio)
@@ -128,8 +132,8 @@ int open_value_file(unsigned int gpio)
     char filename[29];
 
     // create file descriptor of value file
-	snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%d/value", gpio);
-	if ((fd = open(filename, O_RDONLY | O_NONBLOCK)) < 0)
+    snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%d/value", gpio);
+    if ((fd = open(filename, O_RDONLY | O_NONBLOCK)) < 0)
         return -1;
     return fd;
 }
@@ -183,9 +187,11 @@ struct gpios *new_gpio(unsigned int gpio)
         return NULL;
     }
 
-    new_gpio->initial = 1;
-    new_gpio->bouncetime = 0;
+    new_gpio->initial_thread = 1;
+    new_gpio->initial_wait = 1;
+    new_gpio->bouncetime = -666;
     new_gpio->lastcall = 0;
+    new_gpio->thread_added = 0;
 
     if (gpio_list == NULL) {
         new_gpio->next = NULL;
@@ -218,6 +224,17 @@ void delete_gpio(unsigned int gpio)
     }
 }
 
+int gpio_event_added(unsigned int gpio)
+{
+    struct gpios *g = gpio_list;
+    while (g != NULL) {
+        if (g->gpio == gpio)
+            return g->edge;
+        g = g->next;
+    }
+    return 0;
+}
+
 /******* callback list functions ********/
 int add_edge_callback(unsigned int gpio, void (*func)(unsigned int gpio))
 {
@@ -240,6 +257,17 @@ int add_edge_callback(unsigned int gpio, void (*func)(unsigned int gpio))
         while (cb->next != NULL)
             cb = cb->next;
         cb->next = new_cb;
+    }
+    return 0;
+}
+
+int callback_exists(unsigned int gpio)
+{
+    struct callback *cb = callbacks;
+    while (cb != NULL) {
+        if (cb->gpio == gpio)
+            return 1;
+        cb = cb->next;
     }
     return 0;
 }
@@ -290,7 +318,7 @@ void *poll_thread(void *threadarg)
 
     thread_running = 1;
     while (thread_running) {
-        if ((n = epoll_wait(epfd, &events, 1, -1)) == -1) {
+        if ((n = epoll_wait(epfd_thread, &events, 1, -1)) == -1) {
             thread_running = 0;
             pthread_exit(NULL);
         }
@@ -301,12 +329,12 @@ void *poll_thread(void *threadarg)
                 pthread_exit(NULL);
             }
             g = get_gpio_from_value_fd(events.data.fd);
-            if (g->initial) {     // ignore first epoll trigger
-                g->initial = 0;
+            if (g->initial_thread) {     // ignore first epoll trigger
+                g->initial_thread = 0;
             } else {
                 gettimeofday(&tv_timenow, NULL);
                 timenow = tv_timenow.tv_sec*1E6 + tv_timenow.tv_usec;
-                if (g->bouncetime == 0 || timenow - g->lastcall > g->bouncetime*1000 || g->lastcall == 0 || g->lastcall > timenow) {
+                if (g->bouncetime == -666 || timenow - g->lastcall > g->bouncetime*1000 || g->lastcall == 0 || g->lastcall > timenow) {
                     g->lastcall = timenow;
                     event_occurred[g->gpio] = 1;
                     run_callbacks(g->gpio);
@@ -327,13 +355,17 @@ void remove_edge_detect(unsigned int gpio)
         return;
 
     // delete epoll of fd
-    epoll_ctl(epfd, EPOLL_CTL_DEL, g->value_fd, &ev);
+
+    ev.events = EPOLLIN | EPOLLET | EPOLLPRI;
+    ev.data.fd = g->value_fd;
+    epoll_ctl(epfd_thread, EPOLL_CTL_DEL, g->value_fd, &ev);
 
     // delete callbacks for gpio
     remove_callbacks(gpio);
 
     // btc fixme - check return result??
     gpio_set_edge(gpio, NO_EDGE);
+    g->edge = NO_EDGE;
 
     if (g->value_fd != -1)
         close(g->value_fd);
@@ -358,11 +390,23 @@ int event_detected(unsigned int gpio)
 void event_cleanup(unsigned int gpio)
 // gpio of -666 means clean every channel used
 {
-    while (gpio_list != NULL) {
-        if ((gpio == -666) || (gpio_list->gpio == gpio))
-            remove_edge_detect(gpio_list->gpio);
+    struct gpios *g = gpio_list;
+    struct gpios *temp = NULL;
+
+    while (g != NULL) {
+        if ((gpio == -666) || (g->gpio == gpio))
+            temp = g->next;
+            remove_edge_detect(g->gpio);
+            g = temp;
     }
-    thread_running = 0;
+    if (gpio_list == NULL)
+        if (epfd_blocking != -1)
+            close(epfd_blocking);
+            epfd_blocking = -1;
+        if (epfd_thread != -1)
+            close(epfd_thread);
+            epfd_thread = -1;
+        thread_running = 0;
 }
 
 void event_cleanup_all(void)
@@ -370,18 +414,7 @@ void event_cleanup_all(void)
    event_cleanup(-666);
 }
 
-int gpio_event_added(unsigned int gpio)
-{
-    struct gpios *g = gpio_list;
-    while (g != NULL) {
-        if (g->gpio == gpio)
-            return 1;
-        g = g->next;
-    }
-    return 0;
-}
-
-int add_edge_detect(unsigned int gpio, unsigned int edge, unsigned int bouncetime)
+int add_edge_detect(unsigned int gpio, unsigned int edge, int bouncetime)
 // return values:
 // 0 - Success
 // 1 - Edge detection already added
@@ -391,28 +424,37 @@ int add_edge_detect(unsigned int gpio, unsigned int edge, unsigned int bouncetim
     struct epoll_event ev;
     long t = 0;
     struct gpios *g;
+    int i = -1;
 
-    // check to see if this gpio has been added already
-    if (gpio_event_added(gpio) != 0)
+    i = gpio_event_added(gpio);
+    if (i == 0) {    // event not already added
+        if ((g = new_gpio(gpio)) == NULL)
+            return 2;
+
+        gpio_set_edge(gpio, edge);
+        g->edge = edge;
+        g->bouncetime = bouncetime;
+    } else if (i == edge) {  // get existing event
+        g = get_gpio(gpio);
+        if ((bouncetime != -666 && g->bouncetime != bouncetime) ||  // different event bouncetime used
+            (g->thread_added))                // event already added
+            return 1;
+    } else {
         return 1;
+    }
 
-    // create epfd if not already open
-    if ((epfd == -1) && ((epfd = epoll_create(1)) == -1))
+    // create epfd_thread if not already open
+    if ((epfd_thread == -1) && ((epfd_thread = epoll_create(1)) == -1))
         return 2;
-
-    if ((g = new_gpio(gpio)) == NULL)
-        return 2;
-    
-    gpio_set_edge(gpio, edge);
-    g->bouncetime = bouncetime;
 
     // add to epoll fd
     ev.events = EPOLLIN | EPOLLET | EPOLLPRI;
     ev.data.fd = g->value_fd;
-    if (epoll_ctl(epfd, EPOLL_CTL_ADD, g->value_fd, &ev) == -1) {
+    if (epoll_ctl(epfd_thread, EPOLL_CTL_ADD, g->value_fd, &ev) == -1) {
         remove_edge_detect(gpio);
         return 2;
     }
+    g->thread_added = 1;
 
     // start poll thread if it is not already running
     if (!thread_running) {
@@ -424,65 +466,82 @@ int add_edge_detect(unsigned int gpio, unsigned int edge, unsigned int bouncetim
     return 0;
 }
 
-int blocking_wait_for_edge(unsigned int gpio, unsigned int edge)
-// standalone from all the event functions above
+int blocking_wait_for_edge(unsigned int gpio, unsigned int edge, int bouncetime)
+// return values:
+//    0 - Success
+//    1 - Edge detection already added
+//    2 - Other error
 {
-    int epfd, fd, n, i;
+    int n, i;
     struct epoll_event events, ev;
     char buf;
+    struct gpios *g = NULL;
+    struct timeval tv_timenow;
+    unsigned long long timenow;
+    int finished = 0;
 
-    // check to see if this gpio has been added already
-    if (gpio_event_added(gpio))
+    if (callback_exists(gpio))
         return 1;
 
-    if ((epfd = epoll_create(1)) == -1)
-        return 2;
+    // add gpio if it has not been added already
+    i = gpio_event_added(gpio);
+    if (i == NO_EDGE)  { // not found so add event
+        if ((g = new_gpio(gpio)) == NULL)
+            return 2;
+        gpio_set_edge(gpio, edge);
+        g->edge = edge;
+        g->bouncetime = bouncetime;
+    } else if (i != edge) { // event for a different edge
+        return 1;
+    } else  {  // get existing record
+        g = get_gpio(gpio);
+        if (g->bouncetime != -666 && g->bouncetime != bouncetime) {
+            return 1;
+        }
+    }
 
-    // export /sys/class/gpio interface
-    gpio_export(gpio);
-    gpio_set_direction(gpio, 1); // 1=input
-    gpio_set_edge(gpio, edge);
-    if ((fd = open_value_file(gpio)) == -1)
-        return 3;
+    // create epfd_blocking if not already open
+    if ((epfd_blocking == -1) && ((epfd_blocking = epoll_create(1)) == -1)) {
+        return 2;
+    }
 
     // add to epoll fd
     ev.events = EPOLLIN | EPOLLET | EPOLLPRI;
-    ev.data.fd = fd;
-    if (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1) {
-        close(fd);
-        gpio_unexport(gpio);
-        return 4;
+    ev.data.fd = g->value_fd;
+    if (epoll_ctl(epfd_blocking, EPOLL_CTL_ADD, g->value_fd, &ev) == -1) {
+        return 2;
     }
 
-    // epoll for event
-    for (i = 0; i<2; i++) // first time triggers with current state, so ignore
-        if ((n = epoll_wait(epfd, &events, 1, -1)) == -1) {
-            epoll_ctl(epfd, EPOLL_CTL_DEL, fd, &ev);
-            close(fd);
-            gpio_unexport(gpio);
-            return 5;
+    // wait for edge
+    while (!finished) {
+        if ((n = epoll_wait(epfd_blocking, &events, 1, -1)) == -1) {
+            epoll_ctl(epfd_blocking, EPOLL_CTL_DEL, g->value_fd, &ev);
+            return 2;
         }
+        if (g->initial_wait) {    // first time triggers with current state, so ignore
+            g->initial_wait = 0;
+        } else {
+            gettimeofday(&tv_timenow, NULL);
+            timenow = tv_timenow.tv_sec*1E6 + tv_timenow.tv_usec;
+            if (g->bouncetime == -666 || timenow - g->lastcall > g->bouncetime*1000 || g->lastcall == 0 || g->lastcall > timenow) {
+                g->lastcall = timenow;
+                finished = 1;
+            }
+        }
+    }
 
     if (n > 0) {
         lseek(events.data.fd, 0, SEEK_SET);
         if (read(events.data.fd, &buf, 1) != 1) {
-            epoll_ctl(epfd, EPOLL_CTL_DEL, fd, &ev);
-            close(fd);
-            gpio_unexport(gpio);
-            close(epfd);
-            return 6;
+            epoll_ctl(epfd_blocking, EPOLL_CTL_DEL, g->value_fd, &ev);
+            return 2;
         }
-        if (events.data.fd != fd) {
-            epoll_ctl(epfd, EPOLL_CTL_DEL, fd, &ev);
-            close(fd);
-            gpio_unexport(gpio);
-            return 7;
+        if (events.data.fd != g->value_fd) {
+            epoll_ctl(epfd_blocking, EPOLL_CTL_DEL, g->value_fd, &ev);
+            return 2;
         }
     }
 
-    // clean up
-    epoll_ctl(epfd, EPOLL_CTL_DEL, fd, &ev);
-    close(fd);
-    gpio_unexport(gpio);
+    epoll_ctl(epfd_blocking, EPOLL_CTL_DEL, g->value_fd, &ev);
     return 0;
 }

@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: RPi.GPIO
-Version: 0.5.6
+Version: 0.5.7
 Summary: A module to control Raspberry Pi GPIO channels
 Home-page: http://sourceforge.net/projects/raspberry-gpio-python/
 Author: Ben Croston
@@ -23,6 +23,15 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         
         Change Log
         ==========
+        
+        0.5.7
+        -----
+        - Issue 67 - speed up repeated calls to GPIO.wait_for_event()
+        - Added bouncetime keyword to GPIO.wait_for_event()
+        - Added extra edge/interrupt unit tests
+        - GPIO.wait_for_event() can now be mixed with GPIO.add_event_detect()
+        - Improved cleanups of events
+        - Issue 69 resolved
         
         0.5.6
         -----
