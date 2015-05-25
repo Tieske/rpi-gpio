@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: RPi.GPIO
-Version: 0.5.7
+Version: 0.5.8
 Summary: A module to control Raspberry Pi GPIO channels
 Home-page: http://sourceforge.net/projects/raspberry-gpio-python/
 Author: Ben Croston
@@ -23,6 +23,12 @@ Description: This package provides a class to control the GPIO on a Raspberry Pi
         
         Change Log
         ==========
+        
+        0.5.8
+        -----
+        - Allow lists/tuples of channels in GPIO.setup()
+        - GPIO.output() now allows lists/tuples of values
+        - GPIO.wait_for_edge() bug fixes (issue 78)
         
         0.5.7
         -----

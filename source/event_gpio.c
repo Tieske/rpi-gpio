@@ -217,6 +217,7 @@ void delete_gpio(unsigned int gpio)
             temp = g;
             g = g->next;
             free(temp);
+            return;
         } else {
             prev = g;
             g = g->next;
@@ -472,7 +473,7 @@ int blocking_wait_for_edge(unsigned int gpio, unsigned int edge, int bouncetime)
 //    1 - Edge detection already added
 //    2 - Other error
 {
-    int n, i;
+    int n, ed;
     struct epoll_event events, ev;
     char buf;
     struct gpios *g = NULL;
@@ -484,20 +485,24 @@ int blocking_wait_for_edge(unsigned int gpio, unsigned int edge, int bouncetime)
         return 1;
 
     // add gpio if it has not been added already
-    i = gpio_event_added(gpio);
-    if (i == NO_EDGE)  { // not found so add event
+    ed = gpio_event_added(gpio);
+    if (ed == edge) {   // get existing record
+        g = get_gpio(gpio);
+        if (g->bouncetime != -666 && g->bouncetime != bouncetime) {
+            return 1;
+        }
+    } else if (ed == NO_EDGE) {   // not found so add event
         if ((g = new_gpio(gpio)) == NULL)
             return 2;
         gpio_set_edge(gpio, edge);
         g->edge = edge;
         g->bouncetime = bouncetime;
-    } else if (i != edge) { // event for a different edge
-        return 1;
-    } else  {  // get existing record
+    } else {    // ed != edge - event for a different edge
         g = get_gpio(gpio);
-        if (g->bouncetime != -666 && g->bouncetime != bouncetime) {
-            return 1;
-        }
+        gpio_set_edge(gpio, edge);
+        g->edge = edge;
+        g->bouncetime = bouncetime;
+        g->initial_wait = 1;
     }
 
     // create epfd_blocking if not already open

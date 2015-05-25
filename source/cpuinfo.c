@@ -79,6 +79,6 @@ int get_rpi_revision(void)
       return 2;  // revision 2
    else if (strcmp(revision, "0011") == 0)
       return 0;  // compute module
-   else   // assume B+ (0010)
+   else   // assume B+ (0010) or A+ (0012)
       return 3;
 }

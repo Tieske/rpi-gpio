@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+0.5.8
+-----
+- Allow lists/tuples of channels in GPIO.setup()
+- GPIO.output() now allows lists/tuples of values
+- GPIO.wait_for_edge() bug fixes (issue 78)
+
 0.5.7
 -----
 - Issue 67 - speed up repeated calls to GPIO.wait_for_event()
