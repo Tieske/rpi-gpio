@@ -1,0 +1,2 @@
+global-include *.txt *.py *.c *.h
+prune .hg

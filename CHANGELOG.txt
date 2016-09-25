@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+0.6.0a3
+-------
+- Now uses /dev/gpiomem if available to avoid being run as root
+- Fix warnings with pull up/down on pins 3/5
+- Correct base address on Pi 2 when devicetree is disabled
+- caddr_t error on compile (Issue 109)
+- Error on invalid parameters to setup() (issue 93)
+- Add timeout parameter to wait_for_edge() (issue 91)
+
 0.5.11
 ------
 - Fix - pins > 26 missing when using BOARD mode

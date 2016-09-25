@@ -38,7 +38,7 @@ int get_rpi_info(rpi_info *info)
    if ((fp = fopen("/proc/cpuinfo", "r")) == NULL)
       return -1;
    while(!feof(fp)) {
-      fgets(buffer, sizeof(buffer) , fp);
+      fgets(buffer, sizeof(buffer), fp);
       sscanf(buffer, "Hardware	: %s", hardware);
       if (strcmp(hardware, "BCM2708") == 0 ||
           strcmp(hardware, "BCM2709") == 0 ||
@@ -57,7 +57,7 @@ int get_rpi_info(rpi_info *info)
       return -1;
 
    if (len >= 6 && strtol((char[]){revision[len-6],0}, NULL, 16) & 8) {
-	  // new scheme
+      // new scheme
       //info->rev = revision[len-1]-'0';
       strcpy(info->revision, revision);
       switch (revision[len-2]) {
@@ -95,7 +95,7 @@ int get_rpi_info(rpi_info *info)
       info->processor = "Unknown";
       info->type = "Unknown";
       strcpy(info->revision, revision);
-      
+
       // get last four characters (ignore preceeding 1000 for overvolt)
       if (len > 4)
          rev = (char *)&revision+len-4;

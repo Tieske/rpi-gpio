@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Ben Croston
+Copyright (c) 2013-2015 Ben Croston
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -33,4 +33,4 @@ int gpio_event_added(unsigned int gpio);
 int event_initialise(void);
 void event_cleanup(unsigned int gpio);
 void event_cleanup_all(void);
-int blocking_wait_for_edge(unsigned int gpio, unsigned int edge, int bouncetime);
+int blocking_wait_for_edge(unsigned int gpio, unsigned int edge, int bouncetime, int timeout);

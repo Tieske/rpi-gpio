@@ -58,6 +58,12 @@ static int mmap_gpio_mem(void)
    } else if (result == SETUP_MMAP_FAIL) {
       PyErr_SetString(PyExc_RuntimeError, "Mmap of GPIO registers failed");
       return 3;
+   } else if (result == SETUP_CPUINFO_FAIL) {
+      PyErr_SetString(PyExc_RuntimeError, "Unable to open /proc/cpuinfo");
+      return 4;
+   } else if (result == SETUP_NOT_RPI_FAIL) {
+      PyErr_SetString(PyExc_RuntimeError, "Not running on a RPi!");
+      return 5;
    } else { // result == SETUP_OK
       module_setup = 1;
       return 0;
@@ -204,10 +210,13 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
       }
 
       // warn about pull/up down on i2c channels
-      if (rpiinfo.p1_revision == 0) { // compute module - do nothing
-      } else if ((rpiinfo.p1_revision == 1 && (gpio == 0 || gpio == 1)) ||
-                 (gpio == 2 || gpio == 3)) {
-         PyErr_WarnEx(NULL, "A physical pull up resistor is fitted on this channel!", 1);
+      if (gpio_warnings) {
+         if (rpiinfo.p1_revision == 0) { // compute module - do nothing
+         } else if ((rpiinfo.p1_revision == 1 && (gpio == 0 || gpio == 1)) ||
+                    (gpio == 2 || gpio == 3)) {
+            if (pud == PUD_UP || pud == PUD_DOWN)
+               PyErr_WarnEx(NULL, "A physical pull up resistor is fitted on this channel!", 1);
+         }
       }
 
       if (direction == OUTPUT && (initial == LOW || initial == HIGH)) {
@@ -254,6 +263,16 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
 
    if (direction != INPUT && direction != OUTPUT) {
       PyErr_SetString(PyExc_ValueError, "An invalid direction was passed to setup()");
+      return 0;
+   }
+
+   if (direction == OUTPUT && pud != PUD_OFF + PY_PUD_CONST_OFFSET) {
+      PyErr_SetString(PyExc_ValueError, "pull_up_down parameter is not valid for outputs");
+      return 0;
+   }
+
+   if (direction == INPUT && initial != -1) {
+      PyErr_SetString(PyExc_ValueError, "initial parameter is not valid for inputs");
       return 0;
    }
 
@@ -775,16 +794,17 @@ static PyObject *py_event_detected(PyObject *self, PyObject *args)
       Py_RETURN_FALSE;
 }
 
-// python function wait_for_edge(channel, edge, bouncetime=None)
+// python function channel = wait_for_edge(channel, edge, bouncetime=None, timeout=None)
 static PyObject *py_wait_for_edge(PyObject *self, PyObject *args, PyObject *kwargs)
 {
    unsigned int gpio;
    int channel, edge, result;
    int bouncetime = -666; // None
+   int timeout = -1; // None
 
-   static char *kwlist[] = {"channel", "edge", "bouncetime", NULL};
+   static char *kwlist[] = {"channel", "edge", "bouncetime", "timeout", NULL};
 
-   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ii|i", kwlist, &channel, &edge, &bouncetime))
+   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ii|ii", kwlist, &channel, &edge, &bouncetime, &timeout))
       return NULL;
 
    if (get_gpio_number(channel, &gpio))
@@ -811,25 +831,31 @@ static PyObject *py_wait_for_edge(PyObject *self, PyObject *args, PyObject *kwar
       return NULL;
    }
 
+   if (timeout <= 0 && timeout != -1)
+   {
+      PyErr_SetString(PyExc_ValueError, "Timeout must be greater than 0");
+      return NULL;
+   }
+
    if (check_gpio_priv())
       return NULL;
 
    Py_BEGIN_ALLOW_THREADS // disable GIL
-   result = blocking_wait_for_edge(gpio, edge, bouncetime);
+   result = blocking_wait_for_edge(gpio, edge, bouncetime, timeout);
    Py_END_ALLOW_THREADS   // enable GIL
 
    if (result == 0) {
-      Py_INCREF(Py_None);
-      return Py_None;
-   } else if (result == 1) {
+      Py_RETURN_NONE;
+   } else if (result == -1) {
       PyErr_SetString(PyExc_RuntimeError, "Conflicting edge detection events already exist for this GPIO channel");
       return NULL;
-   } else {
+   } else if (result == -2) {
       PyErr_SetString(PyExc_RuntimeError, "Error waiting for edge");
       return NULL;
+   } else {
+      return Py_BuildValue("i", channel);
    }
 
-   Py_RETURN_NONE;
 }
 
 // python function value = gpio_function(channel)
@@ -935,7 +961,7 @@ PyMethodDef rpi_gpio_methods[] = {
    {"remove_event_detect", py_remove_event_detect, METH_VARARGS, "Remove edge detection for a particular GPIO channel\nchannel - either board pin number or BCM number depending on which mode is set."},
    {"event_detected", py_event_detected, METH_VARARGS, "Returns True if an edge has occured on a given GPIO.  You need to enable edge detection using add_event_detect() first.\nchannel - either board pin number or BCM number depending on which mode is set."},
    {"add_event_callback", (PyCFunction)py_add_event_callback, METH_VARARGS | METH_KEYWORDS, "Add a callback for an event already defined using add_event_detect()\nchannel      - either board pin number or BCM number depending on which mode is set.\ncallback     - a callback function"},
-   {"wait_for_edge", (PyCFunction)py_wait_for_edge, METH_VARARGS | METH_KEYWORDS, "Wait for an edge.\nchannel      - either board pin number or BCM number depending on which mode is set.\nedge         - RISING, FALLING or BOTH\n[bouncetime] - time allowed between calls to allow for switchbounce"},
+   {"wait_for_edge", (PyCFunction)py_wait_for_edge, METH_VARARGS | METH_KEYWORDS, "Wait for an edge.  Returns the channel number or None on timeout.\nchannel      - either board pin number or BCM number depending on which mode is set.\nedge         - RISING, FALLING or BOTH\n[bouncetime] - time allowed between calls to allow for switchbounce\n[timeout]    - timeout in ms"},
    {"gpio_function", py_gpio_function, METH_VARARGS, "Return the current GPIO function (IN, OUT, PWM, SERIAL, I2C, SPI)\nchannel - either board pin number or BCM number depending on which mode is set."},
    {"setwarnings", py_setwarnings, METH_VARARGS, "Enable or disable warning messages"},
    {NULL, NULL, 0, NULL}
