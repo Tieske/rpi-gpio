@@ -1,0 +1,35 @@
+# This README file gives a very rough idea of how to build Debian
+# packages for this module
+# There may be dependencies I've forgotten to mention!
+# Version numbers may change as well!
+
+VERSION=0.6.2
+DISTRO=`lsb_release -sc`
+#DEBFULLNAME="Ben Croston"
+#DEBEMAIL="ben@croston.org"
+SCRIPT=$(readlink -f "$0")
+SCRIPTPATH=$(dirname "$SCRIPT")
+set -e
+
+# install debian package build dependencies
+# sudo apt-get install devscripts build-essential fakeroot dh-make python-dev python3-dev python-setuptools python3-setuptools
+
+python setup.py sdist
+rm -rf ~/build_rpi.gpio
+mkdir ~/build_rpi.gpio
+cp dist/RPi.GPIO-$VERSION.tar.gz ~/build_rpi.gpio/rpi.gpio_$VERSION~$DISTRO.orig.tar.gz
+cd ~/build_rpi.gpio
+tar xvfz rpi.gpio_$VERSION~$DISTRO.orig.tar.gz
+cp -a $SCRIPTPATH/debian_$DISTRO ~/build_rpi.gpio/RPi.GPIO-$VERSION/debian
+
+# build .deb files
+cd ~/build_rpi.gpio/RPi.GPIO-$VERSION
+debuild -us -uc
+#debuild clean
+
+cp ~/build_rpi.gpio/python*deb $SCRIPTPATH/dist
+cp ~/build_rpi.gpio/rpi.gpio_$VERSION~$DISTRO.orig.tar.gz $SCRIPTPATH/dist
+cp ~/build_rpi.gpio/rpi.gpio_$VERSION~$DISTRO*.dsc $SCRIPTPATH/dist
+cp ~/build_rpi.gpio/rpi.gpio_$VERSION~$DISTRO*.debian.tar.* $SCRIPTPATH/dist
+rm -rf ~/build_rpi.gpio
+rm $SCRIPTPATH/MANIFEST

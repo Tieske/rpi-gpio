@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+0.6.2
+-----
+- Rewrote Debian packaging mechanism
+- RPI_INFO reports Pi 3
+- Changed module layout - moved C components to RPi._GPIO
+
 0.6.1
 -----
 - Update RPI_INFO to detect more board types

@@ -1,4 +1,10 @@
-rpi.gpio (0.6.1-1) unstable; urgency=low
+rpi.gpio (0.6.2~wheezy-1) unstable; urgency=low
+
+  * To match new Python package 0.6.2
+
+ -- Ben Croston <ben@croston.org>  Mon, 29 Feb 2016 07:13:25 +0000
+
+rpi.gpio (0.6.1~wheezy-1) unstable; urgency=low
 
   * To match new Python package 0.6.1
 

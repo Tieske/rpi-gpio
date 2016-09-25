@@ -43,7 +43,8 @@ int get_rpi_info(rpi_info *info)
       if (strcmp(hardware, "BCM2708") == 0 ||
           strcmp(hardware, "BCM2709") == 0 ||
           strcmp(hardware, "BCM2835") == 0 ||
-          strcmp(hardware, "BCM2836") == 0) {
+          strcmp(hardware, "BCM2836") == 0 ||
+          strcmp(hardware, "BCM2837") == 0 ) {
          found = 1;
       }
       sscanf(buffer, "Revision	: %s", revision);
@@ -65,15 +66,17 @@ int get_rpi_info(rpi_info *info)
 		  case '1': info->type = "Model B"; info->p1_revision = 2; break;
 		  case '2': info->type = "Model A+"; info->p1_revision = 3; break;
 		  case '3': info->type = "Model B+"; info->p1_revision = 3; break;
-		  case '4': info->type = "Pi2 Model B"; info->p1_revision = 3; break;
+		  case '4': info->type = "Pi 2 Model B"; info->p1_revision = 3; break;
 		  case '5': info->type = "Alpha"; info->p1_revision = 3; break;
 		  case '6': info->type = "Compute"; info->p1_revision = 0; break;
+                  case '8': info->type = "Pi 3 Model B"; info->p1_revision = 3; break;
                   case '9': info->type = "Zero"; info->p1_revision = 3; break;
 		  default : info->type = "Unknown"; info->p1_revision = 3; break;
 	  }
 	  switch (revision[len-4]) {
 		  case '0': info->processor = "BCM2835"; break;
 		  case '1': info->processor = "BCM2836"; break;
+                  case '2': info->processor = "BCM2837"; break;
 		  default : info->processor = "Unknown"; break;
 	  }
 	  switch (revision[len-5]) {
@@ -206,7 +209,7 @@ SRRR MMMM PPPP TTTT TTTT VVVV
 S scheme (0=old, 1=new)
 R RAM (0=256, 1=512, 2=1024)
 M manufacturer (0='SONY',1='EGOMAN',2='EMBEST',3='UNKNOWN',4='EMBEST')
-P processor (0=2835, 1=2836)
+P processor (0=2835, 1=2836 2=2837)
 T type (0='A', 1='B', 2='A+', 3='B+', 4='Pi 2 B', 5='Alpha', 6='Compute Module')
 V revision (0-15)
 
