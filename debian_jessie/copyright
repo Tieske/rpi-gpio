@@ -3,9 +3,9 @@ Upstream-Name: rpi.gpio
 Source: http://sourceforge.net/projects/raspberry-gpio-python/
 
 Files: *
-Copyright: Copyright (c) 2012-2013 Ben Croston <ben@croston.org>
+Copyright: Copyright (c) 2012-2016 Ben Croston <ben@croston.org>
 License: MIT
-    Copyright (c) 2012-2013 Ben Croston <ben@croston.org>
+    Copyright (c) 2012-2016 Ben Croston <ben@croston.org>
     .
     Permission is hereby granted, free of charge, to any person obtaining a copy of
     this software and associated documentation files (the "Software"), to deal in

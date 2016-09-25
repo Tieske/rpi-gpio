@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2015 Ben Croston
+Copyright (c) 2013-2016 Ben Croston
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -75,12 +75,6 @@ int gpio_export(unsigned int gpio)
     write(fd, str_gpio, len);
     close(fd);
 
-    // arbitary delay to allow udev time to set user permissions
-    struct timespec delay;
-    delay.tv_sec = 0;
-    delay.tv_nsec = 50000000L; // 50ms
-    nanosleep(&delay, NULL);
-
     return 0;
 }
 
@@ -101,11 +95,22 @@ int gpio_unexport(unsigned int gpio)
 
 int gpio_set_direction(unsigned int gpio, unsigned int in_flag)
 {
+    int retry;
+    struct timespec delay;
     int fd;
     char filename[33];
 
     snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%d/direction", gpio);
-    if ((fd = open(filename, O_WRONLY)) < 0)
+
+    // retry waiting for udev to set correct file permissions
+    delay.tv_sec = 0;
+    delay.tv_nsec = 10000000L; // 10ms
+    for (retry=0; retry<100; retry++) {
+        if ((fd = open(filename, O_WRONLY)) >= 0)
+            break;
+        nanosleep(&delay, NULL);
+    }
+    if (retry >= 100)
         return -1;
 
     if (in_flag)
@@ -172,8 +177,9 @@ struct gpios *new_gpio(unsigned int gpio)
     struct gpios *new_gpio;
 
     new_gpio = malloc(sizeof(struct gpios));
-    if (new_gpio == 0)
+    if (new_gpio == 0) {
         return NULL;  // out of memory
+    }
 
     new_gpio->gpio = gpio;
     if (gpio_export(gpio) != 0) {
@@ -500,8 +506,9 @@ int blocking_wait_for_edge(unsigned int gpio, unsigned int edge, int bouncetime,
             return -1;
         }
     } else if (ed == NO_EDGE) {   // not found so add event
-        if ((g = new_gpio(gpio)) == NULL)
+        if ((g = new_gpio(gpio)) == NULL) {
             return -2;
+        }
         gpio_set_edge(gpio, edge);
         g->edge = edge;
         g->bouncetime = bouncetime;

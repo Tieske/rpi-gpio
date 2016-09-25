@@ -3,7 +3,8 @@
 # There may be dependencies I've forgotten to mention!
 # Version numbers may change as well!
 
-VERSION=0.6.0a3
+VERSION=0.6.1
+DISTRO=jessie
 export DEBFULLNAME="Ben Croston"
 export DEBEMAIL="ben@croston.org"
 
@@ -30,8 +31,8 @@ cd rpi.gpio-$VERSION
 dh_make -s -f ../RPi.GPIO-$VERSION-1.tar.gz
 
 # delete debian directory and replace it with my copy (from hg)
-rm -rf debian
-cp -a ~/temp/raspberry-gpio-python/debian .
+rm -rf debian*
+cp -a ~/temp/raspberry-gpio-python/debian_$DISTRO ./debian
 
 # build .deb files
 debuild -us -uc

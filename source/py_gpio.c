@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2012-2015 Ben Croston
+Copyright (c) 2012-2016 Ben Croston
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -530,19 +530,19 @@ static PyObject *py_setmode(PyObject *self, PyObject *args)
       return NULL;
    }
 
-   gpio_mode = new_mode;
-
-   if (gpio_mode != BOARD && gpio_mode != BCM)
+   if (new_mode != BOARD && new_mode != BCM)
    {
       PyErr_SetString(PyExc_ValueError, "An invalid mode was passed to setmode()");
       return NULL;
    }
 
-   if (rpiinfo.p1_revision == 0 && gpio_mode == BOARD)
+   if (rpiinfo.p1_revision == 0 && new_mode == BOARD)
    {
       PyErr_SetString(PyExc_RuntimeError, "BOARD numbering system not applicable on compute module");
       return NULL;
    }
+
+   gpio_mode = new_mode;
    Py_RETURN_NONE;
 }
 
@@ -556,6 +556,9 @@ static PyObject *py_getmode(PyObject *self, PyObject *args)
       PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
       return NULL;
    }
+
+   if (gpio_mode == MODE_UNKNOWN)
+      Py_RETURN_NONE;
 
    value = Py_BuildValue("i", gpio_mode);
    return value;
@@ -956,7 +959,7 @@ PyMethodDef rpi_gpio_methods[] = {
    {"output", py_output_gpio, METH_VARARGS, "Output to a GPIO channel or list of channels\nchannel - either board pin number or BCM number depending on which mode is set.\nvalue   - 0/1 or False/True or LOW/HIGH"},
    {"input", py_input_gpio, METH_VARARGS, "Input from a GPIO channel.  Returns HIGH=1=True or LOW=0=False\nchannel - either board pin number or BCM number depending on which mode is set."},
    {"setmode", py_setmode, METH_VARARGS, "Set up numbering mode to use for channels.\nBOARD - Use Raspberry Pi board numbers\nBCM   - Use Broadcom GPIO 00..nn numbers"},
-   {"getmode", py_getmode, METH_VARARGS, "Get numbering mode used for channel numbers.\nReturns BOARD, BCM or UNKNOWN"},
+   {"getmode", py_getmode, METH_VARARGS, "Get numbering mode used for channel numbers.\nReturns BOARD, BCM or None"},
    {"add_event_detect", (PyCFunction)py_add_event_detect, METH_VARARGS | METH_KEYWORDS, "Enable edge detection events for a particular GPIO channel.\nchannel      - either board pin number or BCM number depending on which mode is set.\nedge         - RISING, FALLING or BOTH\n[callback]   - A callback function for the event (optional)\n[bouncetime] - Switch bounce timeout in ms for callback"},
    {"remove_event_detect", py_remove_event_detect, METH_VARARGS, "Remove edge detection for a particular GPIO channel\nchannel - either board pin number or BCM number depending on which mode is set."},
    {"event_detected", py_event_detected, METH_VARARGS, "Returns True if an edge has occured on a given GPIO.  You need to enable edge detection using add_event_detect() first.\nchannel - either board pin number or BCM number depending on which mode is set."},

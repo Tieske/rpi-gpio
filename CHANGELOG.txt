@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+0.6.1
+-----
+- Update RPI_INFO to detect more board types
+- Issue 118 - add_event_detect sometimes gives runtime error with unpriv user 
+- Issue 120 - setmode() remembers invalid mode
+
 0.6.0a3
 -------
 - Now uses /dev/gpiomem if available to avoid being run as root

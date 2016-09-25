@@ -1,0 +1,113 @@
+rpi.gpio (0.6.1-1) unstable; urgency=low
+
+  * To match new Python package 0.6.1
+
+ -- Ben Croston <ben@croston.org>  Sun, 03 Jan 2016 15:23:58 +0000
+
+rpi.gpio (0.5.11-1) unstable; urgency=low
+
+  * To match new Python package 0.5.11
+
+ -- Ben Croston <ben@croston.org>  Sun, 15 Feb 2015 22:36:43 +0000
+
+rpi.gpio (0.5.10-1) unstable; urgency=low
+
+  * To match new Python package 0.5.10
+
+ -- Ben Croston <ben@croston.org>  Wed, 11 Feb 2015 23:34:19 +0000
+
+rpi.gpio (0.5.9-1) unstable; urgency=low
+
+  * To match new Python package 0.5.9
+
+ -- Ben Croston <ben@croston.org>  Sun, 04 Jan 2015 22:34:19 +0000
+
+rpi.gpio (0.5.8-1) unstable; urgency=low
+
+  * To match new Python package 0.5.8
+
+ -- Ben Croston <ben@croston.org>  Tue, 11 Nov 2014 12:08:57 +0000
+
+rpi.gpio (0.5.7-1) unstable; urgency=low
+
+  * To match new Python package 0.5.7
+
+ -- Ben Croston <ben@croston.org>  Sat, 13 Sep 2014 20:36:42 +0100
+
+rpi.gpio (0.5.6-1) unstable; urgency=low
+
+  * To match new Python package 0.5.6
+
+ -- Ben Croston <ben@croston.org>  Sun, 20 Jul 2014 20:38:52 +0100
+
+rpi.gpio (0.5.5-1) unstable; urgency=low
+
+  * To match new Python package 0.5.5
+
+ -- Ben Croston <ben@croston.org>  Sat, 04 Jan 2014 20:47:15 +0000
+
+rpi.gpio (0.5.4-1) unstable; urgency=low
+
+  * To match new Python package 0.5.4
+
+ -- Ben Croston <ben@croston.org>  Mon, 16 Sep 2013 22:45:15 +0100
+
+rpi.gpio (0.5.3a-1) unstable; urgency=low
+
+  * To match new Python package 0.5.3a
+
+ -- Ben Croston <ben@croston.org>  Mon, 01 Apr 2013 23:12:42 +0100
+
+rpi.gpio (0.5.2a-1) unstable; urgency=low
+
+  * To match new Python package 0.5.2a
+
+ -- Ben Croston <ben@croston.org>  Sun, 17 Mar 2013 22:29:43 +0000
+
+rpi.gpio (0.5.1a-1) unstable; urgency=low
+
+  * To match new Python package 0.5.1a
+
+ -- Ben Croston <ben@croston.org>  Fri, 15 Mar 2013 23:29:43 +0000
+
+rpi.gpio (0.5.0a-1) unstable; urgency=low
+
+  * To match new Python package 0.5.0a
+
+ -- Ben Croston <ben@croston.org>  Sun, 03 Mar 2013 17:29:43 +0000
+
+rpi.gpio (0.4.2a-1) unstable; urgency=low
+
+  * To match new Python package 0.4.2a
+
+ -- Ben Croston <ben@croston.org>  Sat, 09 Feb 2013 17:29:43 +0000
+
+rpi.gpio (0.4.1a-1) unstable; urgency=low
+
+  * To match new Python package 0.4.1a
+
+ -- Ben Croston <ben@croston.org>  Sun, 23 Sep 2012 20:29:06 +0100
+
+rpi.gpio (0.4.0a-1) unstable; urgency=low
+
+  * To match new Python package 0.4.0a
+
+ -- Ben Croston <ben@croston.org>  Fri, 21 Sep 2012 02:29:06 +0100
+
+rpi.gpio (0.3.1a-1) unstable; urgency=low
+
+  * To match new Python package 0.3.1a
+
+ -- Ben Croston <ben@croston.org>  Wed, 11 Jul 2012 21:43:06 +0100
+
+rpi.gpio (0.3.0a-1) unstable; urgency=low
+
+  * To match new Python package 0.3.0a
+
+ -- Ben Croston <ben@croston.org>  Tue, 10 Jul 2012 11:43:06 +0100
+
+rpi.gpio (0.1.0-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Ben Croston <ben@croston.org>  Sun, 13 May 2012 18:02:06 +0100
